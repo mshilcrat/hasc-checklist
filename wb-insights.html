@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HASC RM Compliance — Insights</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="wb-config.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;background:#f6f7f5;color:#26302e;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
+:root{--teal:#008272;--teal-dark:#006458;--yellow:#F5C518;--green:#1D9E75;--red:#E24B4A;--amber:#BA7517;--bg:#f6f7f5;--card:#fff;--ink:#26302e;--ink-2:#5d6b67;--ink-3:#9aa4a0;--line:#e7eae8;--line-soft:#f0f2f0;--shadow:0 1px 3px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.04)}
+header{background:#fff;border-bottom:3px solid var(--yellow);padding:12px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.brand{display:flex;align-items:center;gap:12px}
+.brand img{height:34px;display:block}
+.who{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--ink-2)}
+.who .av{width:28px;height:28px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px}
+.signout-btn{margin-left:8px;border:1px solid var(--line);background:#fff;color:var(--ink-2);font-family:inherit;font-size:12px;font-weight:600;padding:5px 11px;border-radius:16px;cursor:pointer}
+.signout-btn:hover{border-color:var(--teal);color:var(--teal)}
+nav.tabs{background:#fff;border-bottom:1px solid var(--line);padding:0 22px;display:flex;gap:4px;position:sticky;top:55px;z-index:40}
+nav.tabs a{font-size:16px;text-decoration:none;font-family:inherit;font-weight:600;color:var(--ink-2);padding:13px 14px;border-bottom:2px solid transparent;margin-bottom:-1px}
+nav.tabs a:hover{color:var(--ink)}
+nav.tabs a.on{color:var(--teal);border-bottom-color:var(--teal)}
+.wrap{max-width:720px;margin:0 auto;padding:26px 18px 80px}
+.purpose{font-size:15px;color:var(--ink-2);background:#fff;border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:10px 14px;margin-bottom:16px}
+.purpose b{color:var(--ink)}
+.protostrip{background:#1a2230;color:#fff;text-align:center;font-size:11px;padding:7px}
+.protostrip b{color:var(--yellow);font-weight:700;letter-spacing:.04em}
+.sp-banner{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:12px;padding:14px 18px;margin-bottom:20px;box-shadow:var(--shadow)}
+.sp-icon{width:42px;height:42px;border-radius:10px;background:rgba(0,130,114,.1);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.sp-main{flex:1}
+.sp-count{font-size:18px;color:var(--ink);font-weight:500}
+.sp-count b{font-weight:800;color:var(--teal)}
+.sp-sub{font-size:12px;color:var(--ink-2);margin-top:2px}
+.sp-sub b{color:var(--ink);font-weight:700}
+.sp-x{border:none;background:none;color:var(--ink-3);font-size:15px;cursor:pointer;padding:2px 4px}
+.sp-x:hover{color:var(--ink)}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin:26px 0 8px}
+.btn{font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px;padding:8px 13px;border:1px solid var(--line);background:#fff;color:var(--ink);display:inline-flex;align-items:center;gap:6px}
+.btn.solid{background:var(--teal);color:#fff;border-color:var(--teal)}
+.btn.solid:hover{background:var(--teal-dark);color:#fff}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--teal-dark);color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.18);transition:transform .25s;z-index:90}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+.stat .s-num{font-size:24px;font-weight:700;line-height:1}
+.stat .s-lab{font-size:12px;color:var(--ink-2);margin-top:5px}
+.stat.good .s-num{color:var(--green)} .stat.bad .s-num{color:var(--red)} .stat.warn .s-num{color:var(--amber)}
+.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow)}
+.panel-h{font-size:14px;font-weight:700;margin-bottom:14px;display:flex;align-items:baseline;gap:8px}
+.panel-sub{font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em}
+.trend{display:flex;align-items:flex-end;gap:10px;height:140px;padding-top:6px}
+.trend .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+.trend .bar{width:100%;max-width:34px;border-radius:6px 6px 0 0;transition:height .4s ease;position:relative}
+.trend .bar span{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;color:var(--ink-2)}
+.trend .lab{font-size:11px;color:var(--ink-3)}
+.hbar{display:flex;align-items:center;gap:12px;padding:7px 0}
+.hbar .hb-name{width:120px;font-size:13px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbar .hb-track{flex:1;background:var(--line-soft);border-radius:6px;height:18px;overflow:hidden}
+.hbar .hb-fill{height:100%;border-radius:6px;transition:width .5s ease}
+.hbar .hb-pct{width:42px;text-align:right;font-size:13px;font-weight:700;flex-shrink:0}
+.rmt{width:100%;border-collapse:collapse;font-size:13px}
+.rmt th{text-align:left;font-weight:600;color:var(--ink-2);padding:8px;border-bottom:1px solid var(--line);font-size:12px}
+.rmt td{padding:10px 8px;border-bottom:1px solid var(--line-soft)}
+.rmt tr:last-child td{border-bottom:none}
+.rmt .rt-name{font-weight:600}
+.rmt .rt-home{color:var(--ink-2)}
+.rmt tr.fail td{background:rgba(226,75,74,.04)}
+.rmt .trend-up{color:var(--green)} .rmt .trend-dn{color:var(--red)} .rmt .trend-fl{color:var(--ink-3)}
+.mini-pct{font-weight:700}
+.ac-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.ac-card{border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+.ac-card .ac-name{font-size:13px;font-weight:700;margin-bottom:8px}
+.ac-card .ac-stat{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-2);padding:2px 0}
+.ac-card .ac-ring{font-size:20px;font-weight:700}
+.modal-overlay{position:fixed;inset:0;background:rgba(20,28,26,.5);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:18px;padding:28px 26px;max-width:380px;width:100%;position:relative;box-shadow:0 18px 50px rgba(0,0,0,.25);text-align:center}
+.modal-x{position:absolute;top:14px;right:16px;border:none;background:none;font-size:16px;color:var(--ink-3);cursor:pointer}
+.modal-x:hover{color:var(--ink)}
+.modal-since{font-size:14px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.modal-big{font-size:52px;font-weight:800;color:var(--teal);line-height:1}
+.modal-lab{font-size:17px;color:var(--ink-2);margin-top:4px}
+.modal-of{font-size:15px;color:var(--ink-3);margin-top:8px}
+.modal-break{text-align:left;border-top:1px solid var(--line-soft);padding-top:14px;margin-top:16px}
+.modal-break .mb-row{display:flex;justify-content:space-between;gap:10px;font-size:15px;padding:7px 0;color:var(--ink-2);border-bottom:1px solid var(--line-soft)}
+.modal-break .mb-row:last-child{border-bottom:none}
+.modal-break .mb-row .mb-doc{color:var(--ink)}
+.modal-break .mb-row .mb-time{color:var(--ink-3);font-size:13px;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="protostrip"><b>PROTOTYPE</b> &nbsp;·&nbsp; Sample data for AC review &nbsp;·&nbsp; nothing here is live yet</div>
+
+<header>
+<div class="brand"><img src="hasc-logo.png" alt="HASC Center"></div>
+<div class="who"><span class="av">MS</span><span>Michael S.</span><button class="signout-btn" id="signoutBtn">Sign out</button></div>
+</header>
+
+<nav class="tabs">
+<a href="wb-today.html">Today</a>
+<a href="wb-insights.html" class="on">Insights</a>
+<a href="wb-documents.html">Documents</a>
+<a href="wb-library.html">Library</a>
+<a href="wb-checklists.html">Checklists</a>
+</nav>
+
+<div class="wrap">
+<section id="v-insights">
+<div class="purpose"><b>Insights</b> — who's keeping up and who keeps slipping.</div>
+<div class="eyebrow">Insights · last 30 days</div>
+<div class="stat-row" id="stat-row"></div>
+<button class="btn solid" style="margin-bottom:18px" onclick="openDocsModal()">📊 New since last sign-in</button>
+<div class="panel"><div class="panel-h">Org compliance — last 8 weeks</div><div id="trend-chart"></div></div>
+<div class="panel"><div class="panel-h">Completion by home <span class="panel-sub">worst first</span></div><div id="home-bars"></div></div>
+<div class="panel"><div class="panel-h">Who keeps failing <span class="panel-sub">by RM</span></div><div id="rm-table"></div></div>
+<div class="panel"><div class="panel-h">By area coordinator</div><div id="ac-cards"></div></div>
+</section>
+</div>
+
+<div class="modal-overlay" id="docs-modal" onclick="if(event.target===this)closeDocsModal()">
+<div class="modal">
+<button class="modal-x" onclick="closeDocsModal()" aria-label="Close">✕</button>
+<div class="modal-since" id="modal-since">Since you last signed in</div>
+<div class="modal-big" id="modal-big">0</div>
+<div class="modal-lab">documents completed</div>
+<div class="modal-of" id="modal-of"></div>
+<div class="modal-break" id="modal-break"></div>
+</div>
+</div>
+
+<script>
+const sb = supabase.createClient(window.HASC_CONFIG.SUPABASE_URL, window.HASC_CONFIG.SUPABASE_ANON_KEY);
+sb.auth.getSession().then(({data})=>{ if(!(data && data.session && data.session.user)) window.location.href='wb-index.html'; });
+document.getElementById('signoutBtn').addEventListener('click', async ()=>{ try{ await sb.auth.signOut(); }catch(e){} window.location.href='wb-index.html'; });
+
+const weeks=[{w:"Apr 21",pct:78},{w:"Apr 28",pct:82},{w:"May 5",pct:80},{w:"May 12",pct:85},{w:"May 19",pct:88},{w:"May 26",pct:84},{w:"Jun 2",pct:90},{w:"Jun 9",pct:91}];
+const homeStats=[{home:"Avenue L 8",pct:41},{home:"2802 Avenue I",pct:58},{home:"Mill Basin",pct:64},{home:"East 8th 215",pct:79},{home:"Nostrand 12",pct:83},{home:"Kings Hwy 33",pct:88},{home:"Bedford 740",pct:94},{home:"Avenue J 1010",pct:97},{home:"Ocean Pkwy 90",pct:99}];
+const rmStats=[{rm:"Unassigned",home:"Avenue L 8",pct:41,streak:5,trend:"dn"},{rm:"S. Klein",home:"2802 Avenue I",pct:58,streak:4,trend:"dn"},{rm:"D. Cohen",home:"Mill Basin",pct:64,streak:3,trend:"dn"},{rm:"M. Stern",home:"East 8th 215",pct:79,streak:1,trend:"fl"},{rm:"B. Frank",home:"Kings Hwy 33",pct:88,streak:0,trend:"up"},{rm:"R. Adler",home:"Bedford 740",pct:94,streak:0,trend:"up"},{rm:"J. Estes",home:"Avenue J 1010",pct:97,streak:0,trend:"up"}];
+const acStats=[{ac:"R. Schwartz",homes:9,pct:86,behind:1},{ac:"M. Friedman",homes:8,pct:71,behind:3},{ac:"Frumie",homes:8,pct:93,behind:0},{ac:"D. Levy",homes:7,pct:80,behind:1}];
+function pctColor(p){ return p>=90?'var(--green)':p>=75?'var(--amber)':'var(--red)'; }
+function renderInsights(){
+  const avg=Math.round(homeStats.reduce((s,h)=>s+h.pct,0)/homeStats.length);
+  const failing=homeStats.filter(h=>h.pct<75).length;
+  const perfect=homeStats.filter(h=>h.pct>=95).length;
+  document.getElementById('stat-row').innerHTML='<div class="stat '+(avg>=85?'good':'warn')+'"><div class="s-num">'+avg+'%</div><div class="s-lab">Avg completion</div></div><div class="stat bad"><div class="s-num">'+failing+'</div><div class="s-lab">Homes under 75%</div></div><div class="stat good"><div class="s-num">'+perfect+'</div><div class="s-lab">Homes 95%+</div></div><div class="stat '+(weeks[7].pct>=weeks[6].pct?'good':'bad')+'"><div class="s-num">'+(weeks[7].pct>=weeks[6].pct?'↑':'↓')+Math.abs(weeks[7].pct-weeks[6].pct)+'</div><div class="s-lab">vs last week</div></div>';
+  document.getElementById('trend-chart').innerHTML='<div class="trend">'+weeks.map(w=>{const h=Math.round(w.pct/100*100);return '<div class="col"><div class="bar" style="height:'+h+'%;background:'+pctColor(w.pct)+'"><span>'+w.pct+'</span></div><div class="lab">'+w.w+'</div></div>';}).join('')+'</div>';
+  document.getElementById('home-bars').innerHTML=homeStats.map(h=>'<div class="hbar"><span class="hb-name">'+h.home+'</span><span class="hb-track"><span class="hb-fill" style="width:'+h.pct+'%;background:'+pctColor(h.pct)+'"></span></span><span class="hb-pct" style="color:'+pctColor(h.pct)+'">'+h.pct+'%</span></div>').join('');
+  const arrow={up:'<span class="trend-up">▲ improving</span>',dn:'<span class="trend-dn">▼ slipping</span>',fl:'<span class="trend-fl">– flat</span>'};
+  document.getElementById('rm-table').innerHTML='<table class="rmt"><thead><tr><th>RM</th><th>Home</th><th>30-day</th><th>Missed streak</th><th>Trend</th></tr></thead><tbody>'+rmStats.map(r=>'<tr class="'+(r.pct<75?'fail':'')+'"><td class="rt-name">'+r.rm+'</td><td class="rt-home">'+r.home+'</td><td><span class="mini-pct" style="color:'+pctColor(r.pct)+'">'+r.pct+'%</span></td><td>'+(r.streak?r.streak+' days':'—')+'</td><td>'+arrow[r.trend]+'</td></tr>').join('')+'</tbody></table>';
+  document.getElementById('ac-cards').innerHTML='<div class="ac-row">'+acStats.map(a=>'<div class="ac-card"><div class="ac-name">AC — '+a.ac+'</div><div class="ac-stat"><span>Avg completion</span><span class="ac-ring" style="color:'+pctColor(a.pct)+'">'+a.pct+'%</span></div><div class="ac-stat"><span>Homes</span><span>'+a.homes+'</span></div><div class="ac-stat"><span>Behind now</span><span style="color:'+(a.behind?'var(--red)':'var(--green)')+';font-weight:700">'+a.behind+'</span></div></div>').join('')+'</div>';
+}
+const lastSignOn="Yesterday, 4:12pm";
+const sinceLast=[{doc:"Daily checklist",home:"Avenue J 1010",time:"9:14am"},{doc:"Daily checklist",home:"Bedford 740",time:"8:02am"},{doc:"Fire drill — signed",home:"Kings Hwy 33",time:"Yesterday 6:40pm"},{doc:"Daily checklist",home:"Ocean Pkwy 90",time:"Yesterday 5:55pm"},{doc:"Camera log review",home:"Avenue J 1010",time:"Yesterday 5:20pm"},{doc:"Daily checklist",home:"Nostrand 12",time:"Yesterday 4:48pm"}];
+function openDocsModal(){
+  document.getElementById('modal-big').textContent=sinceLast.length;
+  document.getElementById('modal-of').textContent='Last signed in: '+lastSignOn;
+  document.getElementById('modal-break').innerHTML=sinceLast.map(s=>'<div class="mb-row"><span class="mb-doc">✓ '+s.doc+' — '+s.home+'</span><span class="mb-time">'+s.time+'</span></div>').join('');
+  document.getElementById('docs-modal').classList.add('show');
+}
+function closeDocsModal(){ document.getElementById('docs-modal').classList.remove('show'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeDocsModal(); });
+renderInsights();
+</script>
+</body>
+</html>
