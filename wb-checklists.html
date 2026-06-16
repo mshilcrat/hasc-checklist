@@ -71,15 +71,13 @@ nav.tabs a.on{color:var(--teal);border-bottom-color:var(--teal)}
 </nav>
 <div class="wrap">
 <section id="v-cl">
-<div class="purpose"><b>Checklists</b> — set what each home is responsible for. Add or remove tasks from the library.</div>
-<div class="eyebrow">Pick a home · build its checklist</div>
+<div class="purpose"><b>Checklists</b> — pick your home and check off today's tasks.</div>
+<div class="eyebrow">Home</div>
 <div class="search"><span class="s-ico">⌂</span>
-<select id="cl-home" onchange="renderCL()" style="border:none;outline:none;font-size:15px;font-family:inherit;background:transparent;width:100%"></select>
+<select id="cl-home" onchange="renderCL()" style="border:none;outline:none;font-size:15px;font-family:inherit;background:transparent;width:100%"><option>Loading…</option></select>
 </div>
+<div id="cl-progress" style="font-size:15px;color:var(--ink-2);margin:10px 0 6px"></div>
 <div id="cl-current"></div>
-<div class="eyebrow" style="margin-top:22px">Task library · click to add</div>
-<div id="cl-library"></div>
-<div class="tbl-empty" id="cl-empty" style="display:none">All library tasks are already on this checklist.</div>
 </section>
 </div>
 <div class="toast" id="toast">Saved</div>
@@ -89,81 +87,60 @@ sb.auth.getSession().then(({data})=>{ if(!(data && data.session && data.session.
 document.getElementById('signoutBtn').addEventListener('click', async ()=>{ try{ await sb.auth.signOut(); }catch(e){} window.location.href='wb-index.html'; });
 
 let tt;
-function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),1800); }
-function tog(head){ head.parentElement.classList.toggle('open'); }
-function kd(e,head){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tog(head); } }
-function viewDoc(fname){
-  const w=window.open('','_blank');
-  if(w){ w.document.write('<title>'+fname+'<\/title><body style="font-family:Segoe UI,sans-serif;padding:40px;color:#26302e"><h2 style="color:#008272">'+fname+'<\/h2><p style="color:#5d6b67">Document preview would open here in the live system.<\/p><\/body>'); }
-  else { toast('Allow pop-ups to view'); }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),1500); }
+function today(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+let HOMES=[], TASKS=[], USER=null;
+
+async function init(){
+const { data:{ user } } = await sb.auth.getUser();
+USER = user;
+const { data: homes } = await sb.from('cl_homes').select('home_name').order('home_name');
+HOMES = (homes||[]).map(h=>h.home_name);
+const { data: tasks } = await sb.from('cl_tasks').select('id, home_name, task_name, frequency');
+TASKS = tasks||[];
+const sel=document.getElementById('cl-home');
+sel.innerHTML = HOMES.map(h=>'<option>'+h+'</option>').join('');
+renderCL();
 }
 
-
-const clHomes=["Mill Basin","Avenue J","Quentin Road","Kings Highway","Flatlands"];
-const clLibrary=[
-  {id:"fire",name:"Fire drill",freq:"Monthly",scope:"all"},
-  {id:"firealarm",name:"Fire alarm test",freq:"Monthly",scope:"all"},
-  {id:"med",name:"Medication audit",freq:"Monthly",scope:"all"},
-  {id:"sprink",name:"Sprinkler inspection",freq:"Quarterly",scope:"all"},
-  {id:"evac",name:"Evacuation review",freq:"Quarterly",scope:"all"},
-  {id:"firstaid",name:"First aid kit check",freq:"Monthly",scope:"all"},
-  {id:"water",name:"Water temperature log",freq:"Weekly",scope:"all"},
-  {id:"gen",name:"Generator test",freq:"Monthly",scope:"some"},
-  {id:"pool",name:"Pool safety check",freq:"Weekly",scope:"some"},
-  {id:"elev",name:"Elevator inspection",freq:"Annual",scope:"some"}
-];
-// per-home selected task ids. Default: every home gets all 'all'-scope tasks.
-const clState={};
-clHomes.forEach(h=>{ clState[h]=clLibrary.filter(t=>t.scope==='all').map(t=>t.id); });
-// Mill Basin defaults: drop two tasks to show customization
-clState["Mill Basin"]=clState["Mill Basin"].filter(id=>id!=='water'&&id!=='firstaid');
-
-function fillHomes(){
-  const sel=document.getElementById('cl-home');
-  sel.innerHTML=clHomes.map(h=>'<option>'+h+'</option>').join('');
-}
 function curHome(){ return document.getElementById('cl-home').value; }
 
-function renderCL(){
-  const home=curHome();
-  const ids=clState[home]||[];
-  const cur=document.getElementById('cl-current');
-  if(!ids.length){
-    cur.innerHTML='<div class="tbl-empty">No tasks yet — add some from the library below.</div>';
-  } else {
-    cur.innerHTML='<div class="row open"><div class="row-body" style="display:block">'+
-      ids.map(id=>{
-        const t=clLibrary.find(x=>x.id===id); if(!t) return '';
-        return '<div class="docline">'
-          +'<span class="d-ico">✓</span>'
-          +'<span class="d-name">'+t.name+' <span style="color:#64748b;font-size:12px">· '+t.freq+'</span></span>'
-          +'<button class="abtn pr" onclick="removeTask(&quot;'+id+'&quot;)">Remove</button>'
-          +'</div>';
-      }).join('')+'</div></div>';
-  }
-  // library = tasks not yet added
-  const lib=document.getElementById('cl-library');
-  const avail=clLibrary.filter(t=>!ids.includes(t.id));
-  document.getElementById('cl-empty').style.display=avail.length?'none':'block';
-  lib.innerHTML=avail.map(t=>
-    '<div class="docline">'
-    +'<span class="d-ico">+</span>'
-    +'<span class="d-name">'+t.name+' <span style="color:#64748b;font-size:12px">· '+t.freq+'</span></span>'
-    +'<button class="abtn dl" onclick="addTask(&quot;'+t.id+'&quot;)">Add</button>'
-    +'</div>'
-  ).join('');
+async function renderCL(){
+const home=curHome();
+const cur=document.getElementById('cl-current');
+const prog=document.getElementById('cl-progress');
+const myTasks = TASKS.filter(t=>t.home_name===home);
+const { data: done } = await sb.from('cl_done').select('task_id').eq('home_name', home).eq('done_date', today());
+const doneSet = new Set((done||[]).map(d=>d.task_id));
+const dc = myTasks.filter(t=>doneSet.has(t.id)).length;
+prog.innerHTML = '<b>'+dc+'</b> of <b>'+myTasks.length+'</b> done today';
+cur.innerHTML = myTasks.map(t=>{
+const checked = doneSet.has(t.id);
+return '<div class="docline"><input type="checkbox" '+(checked?'checked':'')+' onchange="toggleTask(this,&quot;'+t.id+'&quot;)" style="width:20px;height:20px;cursor:pointer;accent-color:var(--teal)">'
++'<span class="d-name" style="'+(checked?'color:var(--ink-3);text-decoration:line-through':'')+'">'+t.task_name+' <span style="color:#64748b;font-size:12px">· '+t.frequency+'</span></span></div>';
+}).join('');
 }
-function addTask(id){
-  const home=curHome();
-  if(!clState[home].includes(id)){ clState[home].push(id); toast('Task added'); renderCL(); }
-}
-function removeTask(id){
-  const home=curHome();
-  clState[home]=clState[home].filter(x=>x!==id); toast('Task removed'); renderCL();
-}
-fillHomes();
-renderCL();
 
+async function toggleTask(box, taskId){
+const home=curHome();
+box.disabled=true;
+try{
+if(box.checked){
+const { error } = await sb.from('cl_done').insert({ home_name: home, task_id: taskId, done_date: today(), done_by: USER? USER.email : null });
+if(error) throw error;
+toast('Checked off');
+} else {
+const { error } = await sb.from('cl_done').delete().eq('home_name', home).eq('task_id', taskId).eq('done_date', today());
+if(error) throw error;
+toast('Removed');
+}
+}catch(e){ console.error('toggle failed', e); toast('Could not save'); box.checked=!box.checked; }
+box.disabled=false;
+renderCL();
+}
+
+init();
 </script>
 </body>
 </html>
