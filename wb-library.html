@@ -97,47 +97,22 @@ function viewDoc(fname){
   else { toast('Allow pop-ups to view'); }
 }
 
-const docs=[
-{home:"Mill Basin",type:"Fire drill",date:"5.28.26",ok:true,current:true},
-{home:"Mill Basin",type:"Fire drill",date:"4.30.26",ok:true,current:false},
-{home:"Mill Basin",type:"Fire drill",date:"3.27.26",ok:true,current:false},
-{home:"Mill Basin",type:"Camera log",date:"5.14.26",ok:true,current:true},
-{home:"Mill Basin",type:"Camera log",date:"5.7.26",ok:true,current:false},
-{home:"Mill Basin",type:"Daily checklist",date:"6.15.26",ok:false,current:true},
-{home:"Mill Basin",type:"Daily checklist",date:"6.14.26",ok:true,current:false},
-{home:"Avenue J 1010",type:"Fire drill",date:"5.28.26",ok:true,current:true},
-{home:"Avenue J 1010",type:"Fire drill",date:"4.30.26",ok:true,current:false},
-{home:"Avenue J 1010",type:"Cert",date:"4.12.26",ok:true,current:true},
-{home:"Avenue J 1010",type:"IPOP",date:"4.3.26",ok:true,current:true},
-{home:"Avenue J 1010",type:"Daily checklist",date:"6.15.26",ok:true,current:true},
-{home:"2802 Avenue I",type:"Cert",date:"5.20.26",ok:true,current:true},
-{home:"2802 Avenue I",type:"Daily checklist",date:"6.15.26",ok:false,current:true},
-{home:"2802 Avenue I",type:"Log",date:"5.18.26",ok:false,current:true},
-{home:"Bedford 740",type:"IPOP",date:"4.3.26",ok:true,current:true},
-{home:"Bedford 740",type:"Camera log",date:"5.12.26",ok:true,current:true},
-{home:"Bedford 740",type:"Safety",date:"3.9.26",ok:true,current:true},
-{home:"Bedford 740",type:"Daily checklist",date:"6.15.26",ok:true,current:true},
-{home:"Kings Hwy 33",type:"Fire drill",date:"5.28.26",ok:true,current:true},
-{home:"Kings Hwy 33",type:"Fire drill",date:"4.30.26",ok:true,current:false},
-{home:"Kings Hwy 33",type:"IPOP",date:"4.3.26",ok:true,current:true}
-];
-
-function cmpDate(a,b){
-  function p(d){var x=d.split('.');return new Date(2000+(+x[2]),(+x[0])-1,(+x[1])).getTime();}
-  return p(b)-p(a);
+let docs=[];
+let homes=[...new Set(docs.map(d=>d.home))];
+let types=[...new Set(docs.map(d=>d.type))];
+async function loadDocs(){
+  try{
+    const {data,error}=await sb.from('cl_documents').select('*').order('date',{ascending:false});
+    if(error||!data){ docs=[]; }
+    else{
+      docs=data.map(r=>({home:r.home_name,type:r.doc_type,name:r.name,date:r.date,url:r.url,version:r.version}));
+    }
+  }catch(e){ docs=[]; }
+  homes=[...new Set(docs.map(d=>d.home))];
+  types=[...new Set(docs.map(d=>d.type))];
+  renderArchive();
 }
-function renderArchive(){
-  const q=(document.getElementById('arch-search').value||'').toLowerCase();
-  const list=document.getElementById('arch-list');
-  const empty=document.getElementById('arch-empty');
-  const homes=[...new Set(docs.map(d=>d.home))];
-  let html='', any=false;
-  homes.forEach(home=>{
-    let rows=docs.filter(d=>d.home===home);
-    if(q){ rows=rows.filter(d=>(d.home+' '+d.type).toLowerCase().includes(q)); }
-    if(!rows.length) return;
-    any=true;
-    const types=[...new Set(rows.map(d=>d.type))];
+
     let body='';
     types.forEach(tp=>{
       const versions=rows.filter(d=>d.type===tp).sort((a,b)=>cmpDate(a.date,b.date));
@@ -165,7 +140,7 @@ function renderArchive(){
   list.innerHTML=html;
   empty.style.display=any?'none':'block';
 }
-renderArchive();
+loadDocs();
 </script>
 </body>
 </html>
