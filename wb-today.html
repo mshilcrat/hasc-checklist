@@ -141,8 +141,8 @@ async function loadProfile(){
   try{
     const { data:{ user } } = await sb.auth.getUser();
     if(!user) return;
-    const { data: prof, error } = await sb.from('profiles').select('full_name, role, residences').eq('id', user.id).single();
-    if(error){ console.error('profile load', error); return; }
+    const { data: prof, error } = await sb.from('profiles').select('full_name, role, residences').eq('email', user.email).maybeSingle();
+    if(error){ console.error('profile load', error); return; } if(!prof){ console.warn('no profile for', user.email); return; }
     window.__PROFILE = prof;
     const homes = Array.isArray(prof.residences) ? prof.residences : [];
     const isFull = (prof.role==='admin') || /frumie/i.test(prof.full_name||'');
