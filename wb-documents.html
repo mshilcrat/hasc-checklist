@@ -97,30 +97,14 @@ function viewDoc(fname){
   else { toast('Allow pop-ups to view'); }
 }
 
-const docs=[
-{home:"Mill Basin",type:"Fire drill",date:"5.28.26",ok:true,current:true},
-{home:"Mill Basin",type:"Fire drill",date:"4.30.26",ok:true,current:false},
-{home:"Mill Basin",type:"Fire drill",date:"3.27.26",ok:true,current:false},
-{home:"Mill Basin",type:"Camera log",date:"5.14.26",ok:true,current:true},
-{home:"Mill Basin",type:"Camera log",date:"5.7.26",ok:true,current:false},
-{home:"Mill Basin",type:"Daily checklist",date:"6.15.26",ok:false,current:true},
-{home:"Mill Basin",type:"Daily checklist",date:"6.14.26",ok:true,current:false},
-{home:"Avenue J 1010",type:"Fire drill",date:"5.28.26",ok:true,current:true},
-{home:"Avenue J 1010",type:"Fire drill",date:"4.30.26",ok:true,current:false},
-{home:"Avenue J 1010",type:"Cert",date:"4.12.26",ok:true,current:true},
-{home:"Avenue J 1010",type:"IPOP",date:"4.3.26",ok:true,current:true},
-{home:"Avenue J 1010",type:"Daily checklist",date:"6.15.26",ok:true,current:true},
-{home:"2802 Avenue I",type:"Cert",date:"5.20.26",ok:true,current:true},
-{home:"2802 Avenue I",type:"Daily checklist",date:"6.15.26",ok:false,current:true},
-{home:"2802 Avenue I",type:"Log",date:"5.18.26",ok:false,current:true},
-{home:"Bedford 740",type:"IPOP",date:"4.3.26",ok:true,current:true},
-{home:"Bedford 740",type:"Camera log",date:"5.12.26",ok:true,current:true},
-{home:"Bedford 740",type:"Safety",date:"3.9.26",ok:true,current:true},
-{home:"Bedford 740",type:"Daily checklist",date:"6.15.26",ok:true,current:true},
-{home:"Kings Hwy 33",type:"Fire drill",date:"5.28.26",ok:true,current:true},
-{home:"Kings Hwy 33",type:"Fire drill",date:"4.30.26",ok:true,current:false},
-{home:"Kings Hwy 33",type:"IPOP",date:"4.3.26",ok:true,current:true}
-];
+let docs=[];
+async function loadDocs(){
+  try{
+    const {data,error}=await sb.from('cl_documents').select('*').order('date',{ascending:false});
+    docs=(error||!data)?[]:data.map(r=>({home:r.home_name,type:r.doc_type,name:r.name,date:r.date,url:r.url,version:r.version}));
+  }catch(e){ docs=[]; }
+  renderHomes();
+}
 
 function renderHomes(){
   const q=(document.getElementById('doc-search').value||'').toLowerCase().trim();
@@ -139,7 +123,7 @@ function renderHomes(){
     wrap.insertAdjacentHTML('beforeend','<div class="row'+(q?' open':'')+'"><div class="row-head" tabindex="0" role="button" onclick="tog(this)" onkeydown="kd(event,this)"><span class="d-ico" style="opacity:.6">📁</span><span class="row-title">'+home+'</span><span class="row-meta">'+list.length+' files</span><span class="chev">▶</span></div><div class="row-body" style="padding:0 0 8px 0">'+lines+'</div></div>');
   });
 }
-renderHomes();
+loadDocs();
 </script>
 </body>
 </html>
