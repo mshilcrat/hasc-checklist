@@ -134,12 +134,18 @@ const sb = supabase.createClient(window.HASC_CONFIG.SUPABASE_URL, window.HASC_CO
 sb.auth.getSession().then(({data})=>{ if(!(data && data.session && data.session.user)) window.location.href='wb-index.html'; });
 document.getElementById('signoutBtn').addEventListener('click', async ()=>{ try{ await sb.auth.signOut(); }catch(e){} window.location.href='wb-index.html'; });
 
-const weeks=[{w:"Apr 21",pct:78},{w:"Apr 28",pct:82},{w:"May 5",pct:80},{w:"May 12",pct:85},{w:"May 19",pct:88},{w:"May 26",pct:84},{w:"Jun 2",pct:90},{w:"Jun 9",pct:91}];
-const homeStats=[{home:"Avenue L 8",pct:41},{home:"2802 Avenue I",pct:58},{home:"Mill Basin",pct:64},{home:"East 8th 215",pct:79},{home:"Nostrand 12",pct:83},{home:"Kings Hwy 33",pct:88},{home:"Bedford 740",pct:94},{home:"Avenue J 1010",pct:97},{home:"Ocean Pkwy 90",pct:99}];
-const rmStats=[{rm:"Unassigned",home:"Avenue L 8",pct:41,streak:5,trend:"dn"},{rm:"S. Klein",home:"2802 Avenue I",pct:58,streak:4,trend:"dn"},{rm:"D. Cohen",home:"Mill Basin",pct:64,streak:3,trend:"dn"},{rm:"M. Stern",home:"East 8th 215",pct:79,streak:1,trend:"fl"},{rm:"B. Frank",home:"Kings Hwy 33",pct:88,streak:0,trend:"up"},{rm:"R. Adler",home:"Bedford 740",pct:94,streak:0,trend:"up"},{rm:"J. Estes",home:"Avenue J 1010",pct:97,streak:0,trend:"up"}];
-const acStats=[{ac:"R. Schwartz",homes:9,pct:86,behind:1},{ac:"M. Friedman",homes:8,pct:71,behind:3},{ac:"Frumie",homes:8,pct:93,behind:0},{ac:"D. Levy",homes:7,pct:80,behind:1}];
+let weeks=[];
+let homeStats=[];
+let rmStats=[];
+let acStats=[];
 function pctColor(p){ return p>=90?'var(--green)':p>=75?'var(--amber)':'var(--red)'; }
 function renderInsights(){
+  if(!homeStats||homeStats.length===0){
+    const sr=document.getElementById('stat-row'); if(sr) sr.innerHTML='<div class="ins-empty" style="padding:40px;color:#94a3b8;text-align:center;width:100%">No data yet \u2014 insights will appear once checklists are submitted.</div>';
+    ['trend-chart','home-bars','rm-table','ac-cards'].forEach(id=>{const el=document.getElementById(id); if(el) el.innerHTML='';});
+    return;
+  }
+
   const avg=Math.round(homeStats.reduce((s,h)=>s+h.pct,0)/homeStats.length);
   const failing=homeStats.filter(h=>h.pct<75).length;
   const perfect=homeStats.filter(h=>h.pct>=95).length;
@@ -151,7 +157,7 @@ function renderInsights(){
   document.getElementById('ac-cards').innerHTML='<div class="ac-row">'+acStats.map(a=>'<div class="ac-card"><div class="ac-name">AC — '+a.ac+'</div><div class="ac-stat"><span>Avg completion</span><span class="ac-ring" style="color:'+pctColor(a.pct)+'">'+a.pct+'%</span></div><div class="ac-stat"><span>Homes</span><span>'+a.homes+'</span></div><div class="ac-stat"><span>Behind now</span><span style="color:'+(a.behind?'var(--red)':'var(--green)')+';font-weight:700">'+a.behind+'</span></div></div>').join('')+'</div>';
 }
 const lastSignOn="Yesterday, 4:12pm";
-const sinceLast=[{doc:"Daily checklist",home:"Avenue J 1010",time:"9:14am"},{doc:"Daily checklist",home:"Bedford 740",time:"8:02am"},{doc:"Fire drill — signed",home:"Kings Hwy 33",time:"Yesterday 6:40pm"},{doc:"Daily checklist",home:"Ocean Pkwy 90",time:"Yesterday 5:55pm"},{doc:"Camera log review",home:"Avenue J 1010",time:"Yesterday 5:20pm"},{doc:"Daily checklist",home:"Nostrand 12",time:"Yesterday 4:48pm"}];
+let sinceLast=[];
 function openDocsModal(){
   document.getElementById('modal-big').textContent=sinceLast.length;
   document.getElementById('modal-of').textContent='Last signed in: '+lastSignOn;
