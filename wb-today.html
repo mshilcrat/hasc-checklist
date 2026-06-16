@@ -93,8 +93,8 @@ nav.tabs a.on{color:var(--teal);border-bottom-color:var(--teal)}
 
 <section id="v-dash">
 <div class="purpose"><b>Today</b> — who did their checklist, and who needs chasing.</div>
-<div class="summary"><span class="muted">Today —</span> 29 of 32 homes done. <span class="bad">3 need a look.</span></div>
-<div class="did">✓ I reminded all 3 RMs at 8:00am. Nothing for you to do yet.</div>
+<div class="summary" id="sum-line"><span class="muted">Today —</span> <span id="sum-text">loading…</span></div>
+<div class="did" id="did-line" style="display:none"></div>
 <div id="dash-rows"></div>
 </section>
 
@@ -112,49 +112,63 @@ function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg
 function tog(head){ head.parentElement.classList.toggle('open'); }
 function kd(e,head){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tog(head); } }
 
-const dash=[
-{home:"Mill Basin",rm:"D. Cohen",done:false,sent:"Reminded 8:00am · no reply yet",miss:["Daily — Medex signatures","Daily — Observation logs","Weekend — Shabbos staff logged"]},
-{home:"2802 Avenue I",rm:"S. Klein",done:false,sent:"Reminded 8:00am · opened, not done",miss:["Daily checklist — 4 days","Weekly — Water temp log"]},
-{home:"Avenue L 8",rm:"unassigned",done:false,sent:"No RM to remind — needs assigning",miss:["No RM assigned — nothing submitted in 5 days"]},
-{home:"Avenue J 1010",rm:"J. Estes",done:true,sent:"",miss:[]},
-{home:"Bedford 740",rm:"R. Adler",done:true,sent:"",miss:[]},
-];
-function renderDash(){
-  const wrap=document.getElementById('dash-rows');
-  dash.sort((a,b)=>a.done-b.done);
-  dash.forEach(d=>{
-    let body;
-    if(d.done){ body='<div class="ok-note">'+d.rm+' — all checklists current.</div>'; }
-    else{
-      const miss=d.miss.map(m=>'<div class="miss"><span class="m-dot"></span>'+m+'</div>').join('');
-      const acts = d.rm==="unassigned"
-        ? '<button class="btn solid" onclick="toast(\'Assign RM — opens in real system\')">Assign an RM</button>'
-        : '<button class="btn" onclick="toast(\'Nudged '+d.rm+' again\')">Nudge again</button><button class="btn solid" onclick="toast(\'Looped in AC + Frumie\')">Loop in AC + Frumie</button>';
-      body='<div class="rm">'+d.rm+'</div><div class="sent">'+d.sent+'</div>'+miss+'<div class="actions">'+acts+'</div>';
-    }
-    wrap.insertAdjacentHTML('beforeend',
-      '<div class="row"><div class="row-head" tabindex="0" role="button" onclick="tog(this)" onkeydown="kd(event,this)"><span class="dot '+(d.done?'g':'r')+'"></span><span class="row-title">'+d.home+'</span><span class="row-meta">'+(d.done?'':d.rm)+'</span><span class="chev">▶</span></div><div class="row-body">'+body+'</div></div>');
-  });
+async function loadProfile(){
+try{
+const { data:{ user } } = await sb.auth.getUser();
+if(!user) return;
+const { data: prof } = await sb.from('profiles').select('full_name, role, residences').eq('email', user.email).maybeSingle();
+if(!prof) return;
+window.__PROFILE = prof;
+}catch(e){ console.error('loadProfile failed', e); }
 }
 
-async function loadProfile(){
-  try{
-    const { data:{ user } } = await sb.auth.getUser();
-    if(!user) return;
-    const { data: prof, error } = await sb.from('profiles').select('full_name, role, residences').eq('email', user.email).maybeSingle();
-    if(error){ console.error('profile load', error); return; } if(!prof){ console.warn('no profile for', user.email); return; }
-    window.__PROFILE = prof;
-    const homes = Array.isArray(prof.residences) ? prof.residences : [];
-    const isFull = (prof.role==='admin') || /frumie/i.test(prof.full_name||'');
-    const banner = document.createElement('div');
-    banner.style.cssText='max-width:720px;margin:10px auto 0;padding:10px 14px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;font-size:13px;color:#065f46';
-    banner.textContent = 'Signed in as '+(prof.full_name||user.email)+' · role: '+(prof.role||'unknown')+' · '+(isFull?'FULL ACCESS (all homes)':(homes.length+' home'+(homes.length===1?'':'s')));
-    const wrap = document.querySelector('.wrap');
-    if(wrap) wrap.insertBefore(banner, wrap.firstChild);
-  }catch(e){ console.error('loadProfile failed', e); }
+function today(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+async function loadDash(){
+const wrap=document.getElementById('dash-rows');
+try{
+const { data: homes, error: he } = await sb.from('cl_homes').select('home_name, rm_email');
+if(he) throw he;
+const { data: tasks, error: te } = await sb.from('cl_tasks').select('id, home_name');
+if(te) throw te;
+const { data: done, error: de } = await sb.from('cl_done').select('home_name, task_id').eq('done_date', today());
+if(de) throw de;
+
+const taskCount={}; (tasks||[]).forEach(t=>{ taskCount[t.home_name]=(taskCount[t.home_name]||0)+1; });
+const doneSet={}; (done||[]).forEach(d=>{ (doneSet[d.home_name]=doneSet[d.home_name]||new Set()).add(d.task_id); });
+
+const total=(homes||[]).length;
+let complete=0;
+const rows=(homes||[]).map(h=>{
+const tc=taskCount[h.home_name]||0;
+const dc=(doneSet[h.home_name]?doneSet[h.home_name].size:0);
+const isDone = tc>0 && dc>=tc;
+if(isDone) complete++;
+return {home:h.home_name, rm:h.rm_email||'unassigned', tc, dc, done:isDone};
+});
+
+const remaining=total-complete;
+document.getElementById('sum-text').innerHTML = complete+' of '+total+' homes done.'+(remaining>0?' <span class="bad">'+remaining+' need a look.</span>':'');
+
+rows.sort((a,b)=>a.done-b.done);
+wrap.innerHTML='';
+rows.forEach(d=>{
+let body;
+if(d.done){ body='<div class="ok-note">'+d.rm+' — all '+d.tc+' tasks done today.</div>'; }
+else{
+body='<div class="rm">'+d.rm+'</div><div class="sent">'+d.dc+' of '+d.tc+' tasks done today</div>';
 }
+wrap.insertAdjacentHTML('beforeend',
+'<div class="row"><div class="row-head" tabindex="0" role="button" onclick="tog(this)" onkeydown="kd(event,this)"><span class="dot '+(d.done?'g':'r')+'"></span><span class="row-title">'+d.home+'</span><span class="row-meta">'+(d.done?'':d.rm)+'</span><span class="chev">▶</span></div><div class="row-body">'+body+'</div></div>');
+});
+}catch(e){
+console.error('loadDash failed', e);
+document.getElementById('sum-text').textContent='Could not load data.';
+}
+}
+
 loadProfile();
-renderDash();
+loadDash();
 </script>
 </body>
 </html>
