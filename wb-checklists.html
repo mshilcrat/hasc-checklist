@@ -114,16 +114,13 @@ nav.tabs a.on{color:var(--teal);border-bottom-color:var(--teal)}
 </div>
 <div class="toast" id="toast">Saved</div>
 <script>
-/* ===== Checklists builder — wired to Supabase ===== */
 const sb = supabase.createClient(window.HASC_CONFIG.SUPABASE_URL, window.HASC_CONFIG.SUPABASE_ANON_KEY);
 let CL_LIB=[], CL_HOMES=[], clHome=null, clOff=new Set();
 let clSel={active:new Set(), removed:new Set()};
-
 let tt; function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),1800); }
 function status(msg){ const s=document.getElementById('cl-status'); if(s) s.textContent=msg; }
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function freqLabel(f){ return f.charAt(0).toUpperCase()+f.slice(1); }
-
 async function clInit(){
   status('Loading...');
   const [{data:lib,error:e1},{data:homes,error:e2}] = await Promise.all([
@@ -131,24 +128,20 @@ async function clInit(){
     sb.from('cl_homes').select('home_name').order('home_name')
   ]);
   if(e1||e2){ status('Could not load. '+((e1||e2).message||'')); return; }
-  CL_LIB=lib||[];
-  CL_HOMES=(homes||[]).map(h=>h.home_name);
+  CL_LIB=lib||[]; CL_HOMES=(homes||[]).map(h=>h.home_name);
   const sel=document.getElementById('cl-home-sel'); sel.innerHTML='';
   CL_HOMES.forEach(h=>{ const o=document.createElement('option'); o.value=h; o.textContent=h; sel.appendChild(o); });
   if(CL_HOMES.length){ clHome=CL_HOMES[0]; await loadHome(); }
   status('');
 }
-
 async function loadHome(){
   clHome=document.getElementById('cl-home-sel').value;
   clSel={active:new Set(), removed:new Set()};
   status('Loading '+clHome+'...');
   const {data,error}=await sb.from('cl_home_off').select('task_id').eq('home_name',clHome);
   if(error){ status('Could not load home. '+error.message); return; }
-  clOff=new Set((data||[]).map(r=>r.task_id));
-  status(''); renderBuilder();
+  clOff=new Set((data||[]).map(r=>r.task_id)); status(''); renderBuilder();
 }
-
 function renderBuilder(){
   const ff=document.getElementById('cl-freq-sel').value;
   const aw=document.getElementById('cl-active-list'), rw=document.getElementById('cl-removed-list');
@@ -156,7 +149,7 @@ function renderBuilder(){
   const groups={};
   CL_LIB.forEach(t=>{ if(ff!=='all'&&ff!==t.frequency) return; const k=t.frequency+'||'+t.section; (groups[k]=groups[k]||[]).push(t); });
   Object.keys(groups).forEach(k=>{
-    const [freq,sec]=k.split('||'); const items=groups[k];
+    const parts=k.split('||'); const freq=parts[0], sec=parts[1]; const items=groups[k];
     const act=items.filter(t=>!clOff.has(t.id)); const rem=items.filter(t=>clOff.has(t.id));
     if(act.length){ aN+=act.length; aw.insertAdjacentHTML('beforeend', clGrp(freq,sec,act,'active')); }
     if(rem.length){ rN+=rem.length; rw.insertAdjacentHTML('beforeend', clGrp(freq,sec,rem,'removed')); }
@@ -168,7 +161,6 @@ function renderBuilder(){
   document.getElementById('cl-add-btn').disabled=clSel.removed.size===0;
   document.getElementById('cl-rem-btn').disabled=clSel.active.size===0;
 }
-
 function clGrp(freq,sec,items,side){
   const label=freqLabel(freq)+' \u00b7 '+sec;
   const rows=items.map(t=>{
@@ -177,22 +169,18 @@ function clGrp(freq,sec,items,side){
   }).join('');
   return '<div class="cl-grp"><div class="cl-grp-h">'+esc(label)+'</div>'+rows+'</div>';
 }
-
 function toggleSel(side,id){ if(clSel[side].has(id)) clSel[side].delete(id); else clSel[side].add(id); clSel[side==='active'?'removed':'active'].clear(); renderBuilder(); }
 function moveOne(side,id){ if(side==='active') clOff.add(id); else clOff.delete(id); clSel.active.clear(); clSel.removed.clear(); renderBuilder(); }
 function moveSelected(dir){ if(dir==='add'){ clSel.removed.forEach(id=>clOff.delete(id)); clSel.removed.clear(); } else { clSel.active.forEach(id=>clOff.add(id)); clSel.active.clear(); } renderBuilder(); }
 function moveAll(dir){ const ff=document.getElementById('cl-freq-sel').value; CL_LIB.forEach(t=>{ if(ff!=='all'&&ff!==t.frequency) return; if(dir==='remove') clOff.add(t.id); else clOff.delete(t.id); }); clSel.active.clear(); clSel.removed.clear(); renderBuilder(); }
-
 async function saveHome(){
-  if(!clHome) return;
-  status('Saving...');
+  if(!clHome) return; status('Saving...');
   const {error:delErr}=await sb.from('cl_home_off').delete().eq('home_name',clHome);
   if(delErr){ status('Save failed: '+delErr.message); return; }
   const rows=[...clOff].map(id=>({home_name:clHome, task_id:id}));
   if(rows.length){ const {error:insErr}=await sb.from('cl_home_off').insert(rows); if(insErr){ status('Save failed: '+insErr.message); return; } }
   status(''); toast('\u2713 Checklist saved for '+clHome);
 }
-
 window.addEventListener('load', ()=>setTimeout(clInit,500));
 </script>
 </body>
