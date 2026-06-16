@@ -82,11 +82,11 @@ nav.tabs a.on{color:var(--teal);border-bottom-color:var(--teal)}
 
 <div class="wrap">
 
-<div class="sp-banner" id="sp-banner">
+<div class="sp-banner" id="sp-banner" style="display:none">
 <div class="sp-icon">📁</div>
 <div class="sp-main">
-<div class="sp-count"><b>1,007</b> files stored</div>
-<div class="sp-sub">Document library · since May 1 · last upload <b>Jun 15</b></div>
+<div class="sp-count"><b id="sp-num">0</b> new file<span id="sp-plural">s</span> since your last visit</div>
+<div class="sp-sub" id="sp-since"></div>
 </div>
 <button class="sp-x" onclick="document.getElementById('sp-banner').style.display='none'" aria-label="Dismiss">✕</button>
 </div>
@@ -167,6 +167,20 @@ document.getElementById('sum-text').textContent='Could not load data.';
 }
 }
 
+async function loadFiles(){
+try{
+// No file storage exists yet, so there is nothing new to show.
+// When a files table is added, count rows created after the user's last visit here.
+const newCount = 0;
+if(newCount > 0){
+document.getElementById('sp-num').textContent = newCount.toLocaleString();
+document.getElementById('sp-plural').style.display = (newCount===1) ? 'none' : '';
+document.getElementById('sp-banner').style.display = 'flex';
+}
+}catch(e){ console.error('loadFiles failed', e); }
+}
+
+loadFiles();
 loadProfile();
 loadDash();
 </script>
