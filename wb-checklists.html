@@ -120,7 +120,28 @@ nav.tabs a.on{color:var(--teal);border-bottom-color:var(--teal)}
         </select>
       </div>
     </div>
-    <div class="cl-builder">
+    
+    <div class="cl-add">
+      <h3><span style="color:#7c3aed">+</span> Add a new task</h3>
+      <div class="row">
+        <input type="text" id="cl-new-name" placeholder="Task name (e.g. Check basement)">
+        <select id="cl-new-freq">
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="weekend">Weekend</option>
+          <option value="monthly">Monthly</option>
+          <option value="quarterly">Quarterly</option>
+          <option value="annual">Annual</option>
+        </select>
+        <input type="text" id="cl-new-sec" placeholder="Section (optional)">
+        <select id="cl-new-scope">
+          <option value="home">This home only</option>
+          <option value="all">All homes</option>
+        </select>
+        <button onclick="addTask()">Add task</button>
+      </div>
+    </div>
+<div class="cl-builder">
       <div class="cl-pane">
         <div class="cl-pane-h"><span>This home's checklist</span><span class="cl-cnt" id="cl-active-cnt">0</span></div>
         <div class="cl-pane-list" id="cl-active-list"></div>
@@ -164,7 +185,21 @@ async function clInit(){
   if(CL_HOMES.length){ clHome=CL_HOMES[0]; await loadHome(); }
   status('');
 }
-async function loadHome(){
+async function addTask(){
+      const name=(document.getElementById('cl-new-name').value||'').trim();
+      if(!name){ document.getElementById('cl-new-name').focus(); return; }
+      const freq=document.getElementById('cl-new-freq').value;
+      const sec=(document.getElementById('cl-new-sec').value||'').trim()||'Added tasks';
+      const maxSort=CL_LIB.reduce((m,r)=>Math.max(m,r.sort_order||0),0);
+      const row={frequency:freq,section:sec,task_name:name,sort_order:maxSort+1};
+      const {error}=await sb.from('cl_library').insert(row);
+      if(error){ alert('Could not add task: '+error.message); return; }
+      document.getElementById('cl-new-name').value='';
+      document.getElementById('cl-new-sec').value='';
+      await clInit();
+      if(typeof toast==='function') toast('\u2713 Task added');
+    }
+    async function loadHome(){
   clHome=document.getElementById('cl-home-sel').value;
   clSel={active:new Set(), removed:new Set()};
   status('Loading '+clHome+'...');
