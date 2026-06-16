@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HASC RM Compliance — Library</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="wb-config.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;background:#f6f7f5;color:#26302e;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
+:root{--teal:#008272;--teal-dark:#006458;--yellow:#F5C518;--green:#1D9E75;--red:#E24B4A;--amber:#BA7517;--bg:#f6f7f5;--card:#fff;--ink:#26302e;--ink-2:#5d6b67;--ink-3:#9aa4a0;--line:#e7eae8;--line-soft:#f0f2f0;--shadow:0 1px 3px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.04)}
+header{background:#fff;border-bottom:3px solid var(--yellow);padding:12px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.brand{display:flex;align-items:center;gap:12px}
+.brand img{height:34px;display:block}
+.who{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--ink-2)}
+.who .av{width:28px;height:28px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px}
+.signout-btn{margin-left:8px;border:1px solid var(--line);background:#fff;color:var(--ink-2);font-family:inherit;font-size:12px;font-weight:600;padding:5px 11px;border-radius:16px;cursor:pointer}
+.signout-btn:hover{border-color:var(--teal);color:var(--teal)}
+nav.tabs{background:#fff;border-bottom:1px solid var(--line);padding:0 22px;display:flex;gap:4px;position:sticky;top:55px;z-index:40}
+nav.tabs a{font-size:16px;text-decoration:none;font-family:inherit;font-weight:600;color:var(--ink-2);padding:13px 14px;border-bottom:2px solid transparent;margin-bottom:-1px}
+nav.tabs a:hover{color:var(--ink)}
+nav.tabs a.on{color:var(--teal);border-bottom-color:var(--teal)}
+.wrap{max-width:720px;margin:0 auto;padding:26px 18px 80px}
+.purpose{font-size:15px;color:var(--ink-2);background:#fff;border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:8px;padding:10px 14px;margin-bottom:16px}
+.purpose b{color:var(--ink)}
+.protostrip{background:#1a2230;color:#fff;text-align:center;font-size:11px;padding:7px}
+.protostrip b{color:var(--yellow);font-weight:700;letter-spacing:.04em}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin:26px 0 8px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--teal-dark);color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.18);transition:transform .25s;z-index:90}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.row{border-bottom:1px solid var(--line-soft)}
+.row-head{display:flex;align-items:center;gap:12px;padding:14px 4px;cursor:pointer}
+.row-head:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:6px}
+.row-title{flex:1;font-size:17px}
+.row-meta{font-size:13px;color:var(--ink-3)}
+.chev{font-size:13px;color:var(--ink-3);transition:transform .15s;width:14px;text-align:center}
+.row.open .chev{transform:rotate(90deg)}
+.row-body{display:none}
+.row.open .row-body{display:block}
+.tbl-empty{padding:30px;text-align:center;color:var(--ink-3);font-size:13px}
+.search{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:18px;box-shadow:var(--shadow)}
+.search:focus-within{border-color:var(--teal)}
+.search .s-ico{font-size:17px;color:var(--ink-3)}
+.search input{flex:1;border:none;outline:none;font-family:inherit;font-size:15px;color:var(--ink);background:none}
+.docline{display:flex;align-items:center;gap:11px;padding:11px 4px 11px 35px;border-bottom:1px solid var(--line-soft);cursor:pointer}
+.docline:hover{background:var(--bg)}
+.docline .d-ico{font-size:16px;opacity:.7}
+.docline .d-name{flex:1;font-size:16px}
+.row-head .d-ico{font-size:16px}
+.abtn{font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;padding:8px 17px;border-radius:8px;background:#fff;border:1px solid var(--line);color:var(--ink-2)}
+.abtn.av{color:var(--teal);border-color:rgba(0,130,114,.4)}
+.abtn.av:hover{background:rgba(0,130,114,.06);border-color:var(--teal)}
+.abtn.dl:hover,.abtn.pr:hover{border-color:var(--ink-2);color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="protostrip"><b>PROTOTYPE</b> &nbsp;·&nbsp; Sample data for AC review &nbsp;·&nbsp; nothing here is live yet</div>
+
+<header>
+<div class="brand"><img src="hasc-logo.png" alt="HASC Center"></div>
+<div class="who"><span class="av">MS</span><span>Michael S.</span><button class="signout-btn" id="signoutBtn">Sign out</button></div>
+</header>
+
+<nav class="tabs">
+<a href="wb-today.html">Today</a>
+<a href="wb-insights.html">Insights</a>
+<a href="wb-documents.html">Documents</a>
+<a href="wb-library.html" class="on">Library</a>
+<a href="wb-checklists.html">Checklists</a>
+</nav>
+
+<div class="wrap">
+<section id="v-lib">
+<div class="purpose"><b>Library</b> — every file we have on record, including past versions.</div>
+<div class="eyebrow">Full archive · all versions</div>
+<div class="search"><span class="s-ico">⌕</span><input id="arch-search" placeholder="Search a home or document…" oninput="renderArchive()"></div>
+<div id="arch-list"></div>
+<div class="tbl-empty" id="arch-empty" style="display:none">Nothing matches that search.</div>
+</section>
+</div>
+
+<div class="toast" id="toast">Saved</div>
+
+<script>
+const sb = supabase.createClient(window.HASC_CONFIG.SUPABASE_URL, window.HASC_CONFIG.SUPABASE_ANON_KEY);
+sb.auth.getSession().then(({data})=>{ if(!(data && data.session && data.session.user)) window.location.href='wb-index.html'; });
+document.getElementById('signoutBtn').addEventListener('click', async ()=>{ try{ await sb.auth.signOut(); }catch(e){} window.location.href='wb-index.html'; });
+
+let tt;
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),1800); }
+function tog(head){ head.parentElement.classList.toggle('open'); }
+function kd(e,head){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tog(head); } }
+function viewDoc(fname){
+  const w=window.open('','_blank');
+  if(w){ w.document.write('<title>'+fname+'<\/title><body style="font-family:Segoe UI,sans-serif;padding:40px;color:#26302e"><h2 style="color:#008272">'+fname+'<\/h2><p style="color:#5d6b67">Document preview would open here in the live system.<\/p><\/body>'); }
+  else { toast('Allow pop-ups to view'); }
+}
+
+const docs=[
+{home:"Mill Basin",type:"Fire drill",date:"5.28.26",ok:true,current:true},
+{home:"Mill Basin",type:"Fire drill",date:"4.30.26",ok:true,current:false},
+{home:"Mill Basin",type:"Fire drill",date:"3.27.26",ok:true,current:false},
+{home:"Mill Basin",type:"Camera log",date:"5.14.26",ok:true,current:true},
+{home:"Mill Basin",type:"Camera log",date:"5.7.26",ok:true,current:false},
+{home:"Mill Basin",type:"Daily checklist",date:"6.15.26",ok:false,current:true},
+{home:"Mill Basin",type:"Daily checklist",date:"6.14.26",ok:true,current:false},
+{home:"Avenue J 1010",type:"Fire drill",date:"5.28.26",ok:true,current:true},
+{home:"Avenue J 1010",type:"Fire drill",date:"4.30.26",ok:true,current:false},
+{home:"Avenue J 1010",type:"Cert",date:"4.12.26",ok:true,current:true},
+{home:"Avenue J 1010",type:"IPOP",date:"4.3.26",ok:true,current:true},
+{home:"Avenue J 1010",type:"Daily checklist",date:"6.15.26",ok:true,current:true},
+{home:"2802 Avenue I",type:"Cert",date:"5.20.26",ok:true,current:true},
+{home:"2802 Avenue I",type:"Daily checklist",date:"6.15.26",ok:false,current:true},
+{home:"2802 Avenue I",type:"Log",date:"5.18.26",ok:false,current:true},
+{home:"Bedford 740",type:"IPOP",date:"4.3.26",ok:true,current:true},
+{home:"Bedford 740",type:"Camera log",date:"5.12.26",ok:true,current:true},
+{home:"Bedford 740",type:"Safety",date:"3.9.26",ok:true,current:true},
+{home:"Bedford 740",type:"Daily checklist",date:"6.15.26",ok:true,current:true},
+{home:"Kings Hwy 33",type:"Fire drill",date:"5.28.26",ok:true,current:true},
+{home:"Kings Hwy 33",type:"Fire drill",date:"4.30.26",ok:true,current:false},
+{home:"Kings Hwy 33",type:"IPOP",date:"4.3.26",ok:true,current:true}
+];
+
+function cmpDate(a,b){
+  function p(d){var x=d.split('.');return new Date(2000+(+x[2]),(+x[0])-1,(+x[1])).getTime();}
+  return p(b)-p(a);
+}
+function renderArchive(){
+  const q=(document.getElementById('arch-search').value||'').toLowerCase();
+  const list=document.getElementById('arch-list');
+  const empty=document.getElementById('arch-empty');
+  const homes=[...new Set(docs.map(d=>d.home))];
+  let html='', any=false;
+  homes.forEach(home=>{
+    let rows=docs.filter(d=>d.home===home);
+    if(q){ rows=rows.filter(d=>(d.home+' '+d.type).toLowerCase().includes(q)); }
+    if(!rows.length) return;
+    any=true;
+    const types=[...new Set(rows.map(d=>d.type))];
+    let body='';
+    types.forEach(tp=>{
+      const versions=rows.filter(d=>d.type===tp).sort((a,b)=>cmpDate(a.date,b.date));
+      body+='<div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin:10px 0 4px">'+tp+'</div>';
+      versions.forEach(d=>{
+        const cur=d.current?' <span style="background:#dcfce7;color:#166534;font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px">CURRENT</span>':'';
+        body+='<div class="docline">'
+          +'<span class="d-ico">📄</span>'
+          +'<span class="d-name">'+d.date+cur+'</span>'
+          +'<button class="abtn" onclick="viewDoc(&quot;'+home+' — '+tp+' ('+d.date+')&quot;)">View</button>'
+          +'<button class="abtn dl" onclick="toast(&quot;Download started&quot;)">Download</button>'
+          +'<button class="abtn pr" onclick="toast(&quot;Sent to printer&quot;)">Print</button>'
+          +'</div>';
+      });
+    });
+    html+='<div class="row">'
+      +'<div class="row-head" onclick="tog(this)" tabindex="0" onkeydown="kd(event,this)">'
+        +'<div class="row-title">'+home+'</div>'
+        +'<div class="row-meta">'+rows.length+' files</div>'
+        +'<span class="chev">▸</span>'
+      +'</div>'
+      +'<div class="row-body">'+body+'</div>'
+    +'</div>';
+  });
+  list.innerHTML=html;
+  empty.style.display=any?'none':'block';
+}
+renderArchive();
+</script>
+</body>
+</html>
