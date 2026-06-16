@@ -157,6 +157,14 @@ nav.tabs a.on{color:var(--teal);border-bottom-color:var(--teal)}
   .co-empty{padding:40px 20px;text-align:center;color:#9aa4a0}
   .co-signbar{display:flex;align-items:flex-end;gap:14px;margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px 20px}
   .co-signbar .clbtn{flex:0 0 auto}
+  .clbtn{font:inherit;font-weight:700;border:none;border-radius:10px;padding:12px 20px;cursor:pointer;background:#eef1ef;color:var(--ink)}
+  .clbtn-primary{background:var(--teal);color:#fff}
+  .clbtn-primary:hover{background:var(--teal-dark)}
+  .clbtn:disabled{opacity:.55;cursor:default}
+  .cl-status{font-size:14px;min-height:18px}
+  .cl-status.ok{color:var(--green)}
+  .cl-status.err{color:var(--red)}
+
 </style>
 
 <script>
