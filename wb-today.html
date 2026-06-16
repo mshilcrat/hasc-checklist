@@ -136,6 +136,24 @@ function renderDash(){
       '<div class="row"><div class="row-head" tabindex="0" role="button" onclick="tog(this)" onkeydown="kd(event,this)"><span class="dot '+(d.done?'g':'r')+'"></span><span class="row-title">'+d.home+'</span><span class="row-meta">'+(d.done?'':d.rm)+'</span><span class="chev">▶</span></div><div class="row-body">'+body+'</div></div>');
   });
 }
+
+async function loadProfile(){
+  try{
+    const { data:{ user } } = await sb.auth.getUser();
+    if(!user) return;
+    const { data: prof, error } = await sb.from('profiles').select('full_name, role, residences').eq('id', user.id).single();
+    if(error){ console.error('profile load', error); return; }
+    window.__PROFILE = prof;
+    const homes = Array.isArray(prof.residences) ? prof.residences : [];
+    const isFull = (prof.role==='admin') || /frumie/i.test(prof.full_name||'');
+    const banner = document.createElement('div');
+    banner.style.cssText='max-width:720px;margin:10px auto 0;padding:10px 14px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;font-size:13px;color:#065f46';
+    banner.textContent = 'Signed in as '+(prof.full_name||user.email)+' · role: '+(prof.role||'unknown')+' · '+(isFull?'FULL ACCESS (all homes)':(homes.length+' home'+(homes.length===1?'':'s')));
+    const wrap = document.querySelector('.wrap');
+    if(wrap) wrap.insertBefore(banner, wrap.firstChild);
+  }catch(e){ console.error('loadProfile failed', e); }
+}
+loadProfile();
 renderDash();
 </script>
 </body>
