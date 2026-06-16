@@ -112,11 +112,12 @@ nav.tabs a.on{color:var(--teal);border-bottom-color:var(--teal)}
         <label for="co-freq-sel">SHOW TASKS</label>
         <select id="co-freq-sel">
           <option value="">All frequencies</option>
-          <option value="Daily">Daily</option>
-          <option value="Weekly">Weekly</option>
-          <option value="Monthly">Monthly</option>
-          <option value="Quarterly">Quarterly</option>
-          <option value="Annually">Annually</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="weekend">Weekend</option>
+          <option value="monthly">Monthly</option>
+          <option value="quarterly">Quarterly</option>
+          <option value="annual">Annual</option>
         </select>
       </div>
     </div>
@@ -169,7 +170,7 @@ nav.tabs a.on{color:var(--teal);border-bottom-color:var(--teal)}
 
 <script>
 var sb = window.supabase.createClient(window.HASC_CONFIG.SUPABASE_URL, window.HASC_CONFIG.SUPABASE_ANON_KEY);
-var FREQ_ORDER = ["Daily","Weekly","Monthly","Quarterly","Annually"];
+var FREQ_ORDER = ["daily","weekly","weekend","monthly","quarterly","annual"];
 var state = { homes:[], tasks:[], offIds:{}, home:null, checked:{} };
 
 var homeSel = document.getElementById("co-home-sel");
@@ -221,7 +222,7 @@ function render(){
   });
   var html=""; var lastKey=null;
   rows.forEach(function(t){
-    var key=(t.frequency||"")+" · "+(t.section||"General");
+    var fcap=(t.frequency||"");fcap=fcap?fcap.charAt(0).toUpperCase()+fcap.slice(1):"";var key=fcap+" · "+(t.section||"General");
     if(key!==lastKey){ html+='<div class="co-sec">'+key+'</div>'; lastKey=key; }
     var ck = state.checked[t.id] ? "checked" : "";
     var dn = state.checked[t.id] ? "done" : "";
