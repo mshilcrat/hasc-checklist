@@ -184,6 +184,16 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="wb-config.js"></script>
 <script>
+(async function(){
+  try{
+    var c = window.HASC_CONFIG || {};
+    var gsb = window.supabase.createClient(c.SUPABASE_URL, c.SUPABASE_ANON_KEY);
+    var r = await gsb.auth.getSession();
+    if(!r || !r.data || !r.data.session){ location.replace("wb-login.html"); }
+  }catch(e){ location.replace("wb-login.html"); }
+})();
+</script>
+<script>
 var sb = window.supabase.createClient(window.HASC_CONFIG.SUPABASE_URL, window.HASC_CONFIG.SUPABASE_ANON_KEY);
 var FREQS = ['daily','weekly','weekend','monthly','quarterly','annual'];
 var FLABEL = { daily:'Daily', weekly:'Weekly', weekend:'Weekend', monthly:'Monthly', quarterly:'Quarterly', annual:'Annual' };
