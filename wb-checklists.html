@@ -6,16 +6,7 @@
 <title>HASC RM Compliance — Checklists</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="wb-config.js"></script>
-<script>
-(async function(){
-  try{
-    var c = window.HASC_CONFIG || {};
-    var gsb = window.supabase.createClient(c.SUPABASE_URL, c.SUPABASE_ANON_KEY);
-    var r = await gsb.auth.getSession();
-    if(!r || !r.data || !r.data.session){ location.replace("wb-login.html"); }
-  }catch(e){ location.replace("wb-login.html"); }
-})();
-</script>
+  <script src="wb-guard.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;background:#f6f7f5;color:#26302e;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
