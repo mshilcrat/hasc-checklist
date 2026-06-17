@@ -188,7 +188,7 @@
   try{
     var c = window.HASC_CONFIG || {};
     var gsb = window.supabase.createClient(c.SUPABASE_URL, c.SUPABASE_ANON_KEY);
-    var r = await gsb.auth.getSession();
+    var r = await gsb.auth.getSession(); try{ window.__rmEmail=(r.data.session&&r.data.session.user&&r.data.session.user.email)||""; window.__rmRole=(sessionStorage.getItem("hasc_role")||""); }catch(e){}
     if(!r || !r.data || !r.data.session){ location.replace("wb-login.html"); }
   }catch(e){ location.replace("wb-login.html"); }
 })();
@@ -209,7 +209,7 @@ function toast(msg){ var t=document.getElementById('toast'); t.textContent=msg; 
 
 async function boot(){
   // load homes
-  try{ var h = await sb.from('cl_homes').select('home_name,rm_email').order('home_name'); homes = (h.error||!h.data)?[]:h.data; }catch(e){ homes=[]; }
+  try{ var h = await sb.from('cl_homes').select('home_name,rm_email').order('home_name'); homes = (h.error||!h.data)?[]:h.data; }catch(e){ homes=[]; } if((window.__rmRole==="residence_manager")&&window.__rmEmail){ var __em=window.__rmEmail.toLowerCase(); homes=(homes||[]).filter(function(x){return x&&x.rm_email&&String(x.rm_email).toLowerCase()===__em;}); }
   var sel = document.getElementById('home-sel');
   sel.innerHTML = homes.map(function(x){ return '<option value="'+x.home_name.replace(/"/g,'&quot;')+'">'+x.home_name+'</option>'; }).join('');
   sel.addEventListener('change', function(){ currentHome = sel.value; loadHome(); });
