@@ -6,7 +6,7 @@
 <title>HASC RM Compliance Portal</title>
 <style>
   :root {
-    --hasc-teal: #008272; --hasc-teal-light: #00a884; --hasc-teal-dark: #006458;
+    --hasc-teal: #3fc1c9; --hasc-teal-light: #3fc1c9; --hasc-teal-dark: #1a8c94;
     --hasc-yellow: #F5C518; --hasc-blue: #0078d4;
     --bg-page: #f0f2f5; --bg-card: #ffffff; --bg-soft: #f8f9fb;
     --text-primary: #323130; --text-secondary: #605e5c; --text-muted: #a19f9d;
@@ -71,13 +71,13 @@
   .signoff-body { padding: 18px 20px; }
   .signoff-body label { font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px; }
   .signoff-body textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; resize: vertical; min-height: 70px; margin-bottom: 16px; }
-  .signoff-body textarea:focus { outline: none; border-color: var(--hasc-teal); box-shadow: 0 0 0 2px rgba(0,130,114,.12); }
+  .signoff-body textarea:focus { outline: none; border-color: var(--hasc-teal); box-shadow: 0 0 0 2px rgba(63,193,201,.12); }
   .cert-text { background: var(--bg-soft); border-left: 3px solid var(--hasc-teal); padding: 12px 16px; border-radius: 6px; font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px; font-style: italic; }
   .sign-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
   .sign-field { flex: 1; min-width: 200px; }
   .sign-field .sig-line { border: 2px dashed var(--border); border-radius: 8px; padding: 14px; text-align: center; color: var(--text-muted); font-size: 13px; cursor: pointer; transition: all .15s; }
   .sign-field .sig-line:hover { border-color: var(--hasc-teal); color: var(--hasc-teal); }
-  .sign-field.signed .sig-line { border-style: solid; border-color: var(--hasc-teal); background: rgba(0,130,114,.05); color: var(--hasc-teal); font-family: 'Segoe Script', cursive; font-size: 18px; font-weight: 600; }
+  .sign-field.signed .sig-line { border-style: solid; border-color: var(--hasc-teal); background: rgba(63,193,201,.05); color: var(--hasc-teal); font-family: 'Segoe Script', cursive; font-size: 18px; font-weight: 600; }
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 11px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; font-family: inherit; transition: all .15s; }
   .btn-primary { background: var(--hasc-teal); color: #fff; }
   .btn-primary:hover { background: var(--hasc-teal-dark); }
@@ -94,14 +94,7 @@
 <body>
 <header>
 <div class="header-left">
-<svg class="header-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 60">
-<rect x="0" y="2" width="22" height="22" fill="#008272"/>
-<polygon points="26,24 48,24 37,2" fill="#F5C518"/>
-<circle cx="11" cy="39" r="11" fill="#F5C518"/>
-<rect x="37" y="28" width="11" height="22" fill="#008272"/>
-<text x="56" y="26" font-family="Segoe UI,Arial,sans-serif" font-weight="700" font-size="22" fill="#008272" letter-spacing="1">HASC</text>
-<text x="56" y="50" font-family="Segoe UI,Arial,sans-serif" font-weight="700" font-size="22" fill="#008272" letter-spacing="1">CENTER</text>
-</svg>
+      <img class="header-logo" src="hasc-logo.png" alt="HASC Center" />
 <div class="header-divider"></div>
 <div class="header-title-block">
 <div class="header-title">RM Checklists</div>
@@ -135,7 +128,7 @@
 <div class="progress-ring-wrap">
 <svg width="64" height="64" viewBox="0 0 64 64">
 <circle cx="32" cy="32" r="27" fill="none" stroke="#f0f2f5" stroke-width="7"/>
-<circle id="progress-ring" cx="32" cy="32" r="27" fill="none" stroke="#008272" stroke-width="7" stroke-linecap="round" stroke-dasharray="169.6" stroke-dashoffset="169.6" transform="rotate(-90 32 32)" style="transition: stroke-dashoffset .5s ease;"/>
+<circle id="progress-ring" cx="32" cy="32" r="27" fill="none" stroke="#3fc1c9" stroke-width="7" stroke-linecap="round" stroke-dasharray="169.6" stroke-dashoffset="169.6" transform="rotate(-90 32 32)" style="transition: stroke-dashoffset .5s ease;"/>
 </svg>
 <div class="progress-ring-text" id="progress-pct">0%</div>
 </div>
@@ -188,7 +181,7 @@
   try{
     var c = window.HASC_CONFIG || {};
     var gsb = window.supabase.createClient(c.SUPABASE_URL, c.SUPABASE_ANON_KEY);
-    var r = await gsb.auth.getSession(); try{ window.__rmEmail=(r.data.session&&r.data.session.user&&r.data.session.user.email)||""; window.__rmRole=(sessionStorage.getItem("hasc_role")||""); }catch(e){}
+    var r = await gsb.auth.getSession();
     if(!r || !r.data || !r.data.session){ location.replace("wb-login.html"); }
   }catch(e){ location.replace("wb-login.html"); }
 })();
@@ -209,7 +202,7 @@ function toast(msg){ var t=document.getElementById('toast'); t.textContent=msg; 
 
 async function boot(){
   // load homes
-  try{ var h = await sb.from('cl_homes').select('home_name,rm_email').order('home_name'); homes = (h.error||!h.data)?[]:h.data; }catch(e){ homes=[]; } if((window.__rmRole==="residence_manager")&&window.__rmEmail){ var __em=window.__rmEmail.toLowerCase(); homes=(homes||[]).filter(function(x){return x&&x.rm_email&&String(x.rm_email).toLowerCase()===__em;}); }
+  try{ var h = await sb.from('cl_homes').select('home_name,rm_email').order('home_name'); homes = (h.error||!h.data)?[]:h.data; }catch(e){ homes=[]; }
   var sel = document.getElementById('home-sel');
   sel.innerHTML = homes.map(function(x){ return '<option value="'+x.home_name.replace(/"/g,'&quot;')+'">'+x.home_name+'</option>'; }).join('');
   sel.addEventListener('change', function(){ currentHome = sel.value; loadHome(); });
