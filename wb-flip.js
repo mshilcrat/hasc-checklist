@@ -34,7 +34,7 @@
   }
 
   function wire(){
-    var av=document.querySelector(".av");
+    var av=document.querySelector(".av, #nav-avatar, .nav-avatar");
     if(!av){ return false; }
     if(av.dataset.flipWired){ return true; }
     av.dataset.flipWired="1";
