@@ -201,6 +201,7 @@ var taskIndex = {};    // taskId -> library uuid
 var currentHome = null;
 var homes = [];
 var isSigned = false;
+  var signerName='';
 
 function toast(msg){ var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(function(){t.classList.remove('show');},1600); }
 
@@ -307,11 +308,14 @@ function updateProgress(){
   checkSubmitReady();
 }
 
-function signNow(){
-  isSigned=true; document.getElementById('sign-field').classList.add('signed');
-  document.getElementById('sig-line').textContent='Signed';
-  checkSubmitReady(); toast('✓ Signed');
-}
+  function signNow(){
+    var typed=prompt('Type your full name to sign:');
+    if(!typed || !typed.trim()){ return; }
+    signerName=typed.trim();
+    isSigned=true; document.getElementById('sign-field').classList.add('signed');
+    document.getElementById('sig-line').textContent='Signed by '+signerName;
+    checkSubmitReady(); toast('✓ Signed');
+  }
 
 function checkSubmitReady(){
   // submit enabled once signed and at least one task done overall
@@ -328,7 +332,7 @@ async function submitChecklist(){
   if(!doneUuids.length){ toast('Tick at least one task'); return; }
   btn.disabled=true; btn.textContent='Submitting…';
   var today=new Date().toISOString().slice(0,10);
-  var rows=doneUuids.map(function(id){ return { home_name: currentHome, task_id: id, done_by: (document.getElementById('nav-name').textContent||'RM'), done_date: today }; });
+  var rows=doneUuids.map(function(id){ return { home_name: currentHome, task_id: id, done_by: (signerName||'RM'), done_date: today }; });
   try{
     var res=await sb.from('cl_done').insert(rows);
     if(res.error) throw res.error;
