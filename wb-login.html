@@ -45,11 +45,11 @@ var c = window.HASC_CONFIG || {};
 var sb = window.supabase.createClient(c.SUPABASE_URL, c.SUPABASE_ANON_KEY);
 function routeFor(role){ return (role==="residence_manager") ? "wb-checkoff.html" : "wb-today.html"; }
 // On the login page, always start from a clean slate: sign out any
-  // leftover session so a new login can never inherit a previous user.
-  (async function(){
-      try{ await sb.auth.signOut(); }catch(e){}
-      try{ sessionStorage.removeItem("hasc_role"); sessionStorage.removeItem("hasc_homes"); }catch(e){}
-  })();
+// leftover session so a new login can never inherit a previous user.
+(async function(){
+  try{ await sb.auth.signOut(); }catch(e){}
+  try{ sessionStorage.removeItem("hasc_role"); sessionStorage.removeItem("hasc_homes"); }catch(e){}
+})();
 document.getElementById("loginForm").addEventListener("submit", async function(ev){
   ev.preventDefault();
   var btn = document.getElementById("btn");
@@ -61,8 +61,8 @@ document.getElementById("loginForm").addEventListener("submit", async function(e
   try{
     var r = await sb.auth.signInWithPassword({ email: email, password: password });
     if(r.error){ throw r.error; }
-    var uid = r.data.user.id;
-    var p = await sb.from("profiles").select("role,residences").eq("id",uid).single();
+    var authEmail = (r.data.user.email || email).toLowerCase();
+    var p = await sb.from("profiles").select("role,residences").ilike("email",authEmail).single();
     if(p.error || !p.data){ throw new Error("No profile / role found for this account."); }
     try{ sessionStorage.setItem("hasc_role", p.data.role||""); sessionStorage.setItem("hasc_homes", JSON.stringify(p.data.residences||[])); }catch(e){}
     location.replace(routeFor(p.data.role));
