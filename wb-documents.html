@@ -93,28 +93,93 @@ function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg
 function tog(head){ head.parentElement.classList.toggle('open'); }
 function kd(e,head){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tog(head); } }
 function rmDocHtml(fname){
-  var d = (window.__docReg||{})[fname];
-  var rec = d && d.rec ? d.rec : null;
-  var css = '<style>body{font-family:Segoe UI,Arial,sans-serif;color:#323130;margin:0;padding:32px;}h1{color:#1a8c94;font-size:22px;margin:0 0 4px;}.sub{color:#605e5c;font-size:13px;margin-bottom:18px;}.meta{display:flex;gap:24px;flex-wrap:wrap;background:#f8f9fb;border:1px solid #e1e1e1;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:13px;}.meta b{display:block;color:#a19f9d;font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}.sec{font-size:11px;font-weight:700;color:#a19f9d;letter-spacing:.08em;text-transform:uppercase;margin:18px 0 8px;}.item{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid #f3f2f1;border-radius:8px;margin-bottom:6px;font-size:14px;}.bx{width:18px;height:18px;border-radius:5px;border:2px solid #c8c8c8;flex-shrink:0;text-align:center;line-height:16px;font-size:12px;}.done .bx{background:#3fc1c9;border-color:#3fc1c9;color:#fff;}.skip{color:#a19f9d;}.sig{margin-top:28px;border-top:1px solid #e1e1e1;padding-top:18px;}.signame{font-family:Segoe Script,cursive;font-size:26px;color:#1a8c94;}.cert{font-style:italic;color:#605e5c;font-size:12px;background:#f8f9fb;border-left:3px solid #3fc1c9;padding:10px 14px;border-radius:6px;margin:12px 0;}</style>';
-  if(!rec || !rec.tasks_json){
-    return css+'<h1>'+fname+'</h1><p class="sub">Signed compliance checklist.</p><p style="color:#605e5c">No itemized task data was recorded for this submission.</p>';
-  }
-  var tj = rec.tasks_json;
-  var items = (tj && tj.items) ? tj.items : [];
-  var doneN = items.filter(function(x){return x.done;}).length;
-  var rows = items.map(function(x){
-    return '<div class="item '+(x.done?'done':'skip')+'"><span class="bx">'+(x.done?'\u2713':'')+'</span><span>'+x.name+(x.done?'':' \u2014 not done')+'</span></div>';
-  }).join('');
-  var freq = (tj.frequency||rec.frequency||'').replace(/^./,function(c){return c.toUpperCase();});
-  var html = css;
-  html += '<h1>'+(rec.home_name||'')+'</h1>';
-  html += '<div class="sub">Signed '+freq+' Compliance Checklist</div>';
-  html += '<div class="meta"><div><b>Date</b>'+(rec.submitted_at?new Date(rec.submitted_at).toLocaleString():'')+'</div><div><b>Residence</b>'+(rec.home_name||'')+'</div><div><b>Completed</b>'+doneN+' of '+items.length+' items</div></div>';
-  html += '<div class="sec">Checklist Items</div>'+rows;
-  if(rec.comments){ html += '<div class="sec">Comments</div><div class="item">'+rec.comments+'</div>'; }
-  html += '<div class="cert">I certify that I have personally reviewed the information above and affirm that I have checked all items applicable to my residence. I understand that signing this document serves as my legal confirmation for compliance purposes.</div>';
-  html += '<div class="sig"><b style="color:#a19f9d;font-size:11px;text-transform:uppercase;letter-spacing:.06em;">Signed by</b><div class="signame">'+(rec.signature||rec.submitted_by||'')+'</div></div>';
-  return html;
+var d = (window.__docReg||{})[fname];
+var rec = d && d.rec ? d.rec : null;
+var esc = function(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+var css = '<style>'
++ '@page{size:Letter;margin:0;}'
++ '*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
++ 'body{font-family:Georgia,"Times New Roman",serif;background:#e8eef0;color:#22343a;}'
++ '.sheet{width:8.5in;min-height:11in;margin:0 auto;background:#fff;box-shadow:0 10px 40px rgba(12,46,52,.15);}'
++ '@media print{body{background:#fff;}.sheet{width:auto;min-height:auto;box-shadow:none;margin:0;}}'
++ '.gv{font-family:"Great Vibes",cursive;}'
++ '</style>'
++ '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap">';
+var logoEl = document.querySelector('header .brand img');
+var logo = logoEl ? logoEl.src : '';
+if(!rec || !rec.tasks_json){
+return css+'<div class="sheet" style="padding:48px;"><h1 style="color:#0c2e34;">'+esc(fname)+'</h1><p style="color:#5a6b70;">No itemized task data was recorded for this submission.</p></div>';
+}
+var tj = rec.tasks_json;
+var items = (tj && tj.items) ? tj.items : [];
+var total = items.length;
+var doneN = items.filter(function(x){return x.done;}).length;
+var dt = rec.submitted_at ? new Date(rec.submitted_at) : null;
+var dateStr = dt ? dt.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}) : '';
+var timeStr = dt ? dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '';
+var freq = (tj.frequency||rec.frequency||'Daily'); freq = freq.charAt(0).toUpperCase()+freq.slice(1);
+var docId = (function(){ var s=String(rec.id||rec.home_name||fname); var h=0; for(var i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))>>>0;} return h.toString(16).toUpperCase().slice(0,8); })();
+var pct = total ? Math.round(doneN/total*100) : 0;
+var C = Math.PI*2*52; var off = C*(1-(total?doneN/total:0));
+var sections;
+if(total===17){
+sections=[{t:'Daily Operations',a:0,b:5},{t:'Medical',a:5,b:9},{t:'Logs',a:9,b:16},{t:'Incidents',a:16,b:17}];
+} else {
+sections=[{t:freq+' Checklist',a:0,b:total}];
+}
+function card(s){
+var its = items.slice(s.a,s.b);
+var dn = its.filter(function(x){return x.done;}).length;
+var rows = its.map(function(x){
+var box = x.done
+? '<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;background:#1FA7B6;color:#fff;font-size:15px;flex:0 0 auto;">&#10003;</span>'
+: '<span style="display:inline-block;width:26px;height:26px;border-radius:7px;border:2px solid #d6dee0;background:#fff;flex:0 0 auto;"></span>';
+var pill = x.done
+? '<span style="font-family:Arial,sans-serif;font-size:12px;font-weight:600;color:#1FA7B6;background:#e7f6f8;padding:5px 13px;border-radius:14px;white-space:nowrap;">Completed</span>'
+: '<span style="font-family:Arial,sans-serif;font-size:12px;font-weight:600;color:#9aa6a9;background:#f1f4f5;padding:5px 13px;border-radius:14px;white-space:nowrap;">Not completed</span>';
+return '<div style="display:flex;align-items:center;gap:15px;padding:13px 4px;border-bottom:1px solid #f0f4f5;">'+box+'<div style="flex:1;font-family:Arial,sans-serif;font-size:14.5px;color:'+(x.done?'#22343a':'#9aa6a9')+';">'+esc(x.name)+'</div>'+pill+'</div>';
+}).join('');
+return '<div style="border:1px solid #e6edee;border-radius:16px;margin-top:16px;overflow:hidden;break-inside:avoid;">'
++'<div style="display:flex;align-items:center;justify-content:space-between;background:#f6fafb;padding:15px 20px;border-bottom:1px solid #e6edee;">'
++'<div style="display:flex;align-items:center;gap:13px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:#1FA7B6;color:#fff;font-size:13px;">&#9670;</span>'
++'<span style="font-family:Arial,sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;color:#0c2e34;">'+esc(s.t.toUpperCase())+'</span></div>'
++'<span style="font-family:Arial,sans-serif;font-size:13px;font-weight:600;color:#1FA7B6;background:#e7f6f8;padding:4px 13px;border-radius:13px;">'+dn+' / '+its.length+'</span></div>'
++'<div style="padding:6px 20px 10px;">'+rows+'</div></div>';
+}
+var body = sections.map(card).join('');
+var sigName = rec.signature || rec.submitted_by || '';
+var html = css + '<div class="sheet">';
+html += '<div style="background:linear-gradient(180deg,#f2f9fa 0%,#ffffff 78%);padding:34px 46px 26px;border-bottom:1px solid #e3edef;">'
++'<div style="display:flex;align-items:center;justify-content:space-between;">'
++'<div style="display:flex;align-items:center;gap:22px;">'
++'<div style="background:#fff;border:1px solid #e1ebed;border-radius:14px;padding:14px 20px;box-shadow:0 4px 14px rgba(14,124,137,.10);"><img src="'+logo+'" style="height:46px;width:auto;display:block;"></div>'
++'<div style="border-left:2px solid #d6e6e8;padding-left:22px;"><div style="font-size:23px;font-weight:700;color:#0c2e34;line-height:1.1;">HASC Center</div>'
++'<div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2.5px;color:#1FA7B6;margin-top:5px;">RESIDENTIAL MANAGEMENT</div></div></div>'
++'<div style="display:inline-block;background:#0c2e34;color:#fff;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;padding:8px 16px;border-radius:20px;">COMPLIANCE RECORD</div></div>'
++'<div style="margin-top:24px;"><div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;color:#1FA7B6;">SIGNED '+esc(freq.toUpperCase())+' COMPLIANCE CHECKLIST</div>'
++'<div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:8px;"><div><div style="font-size:38px;font-weight:700;color:#0c2e34;line-height:1;">'+esc(rec.home_name||'')+'</div>'
++'<div style="font-family:Arial,sans-serif;font-size:13px;color:#5a6b70;margin-top:8px;">'+esc(freq)+' operational compliance verification</div></div>'
++'<div style="text-align:right;font-family:Arial,sans-serif;font-size:11px;color:#8a979b;line-height:1.7;"><div>Document ID &middot; '+docId+'</div><div>Generated '+(dt?dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'')+'</div></div></div></div></div>';
+html += '<div style="padding:26px 46px;border-bottom:1px solid #eef3f4;display:flex;align-items:center;">'
++'<div style="flex:0 0 auto;display:flex;align-items:center;gap:18px;padding-right:26px;border-right:1px solid #eef3f4;">'
++'<svg width="120" height="120" viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="#eef3f4" stroke-width="13"></circle>'
++'<circle cx="60" cy="60" r="52" fill="none" stroke="#3EC5D3" stroke-width="13" stroke-linecap="round" stroke-dasharray="'+C+'" stroke-dashoffset="'+off+'" transform="rotate(-90 60 60)"></circle></svg>'
++'<div><div style="font-size:24px;font-weight:700;color:#0c2e34;">'+doneN+' of '+total+'</div><div style="font-family:Arial,sans-serif;font-size:13px;color:#8d999c;">items completed</div></div></div>'
++'<div style="flex:1;padding-left:26px;display:flex;">'
++'<div style="flex:1;"><div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:#aab4b7;">RESIDENCE</div><div style="font-size:15px;color:#22343a;margin-top:5px;font-weight:700;">'+esc(rec.home_name||'')+'</div></div>'
++'<div style="flex:1;padding-left:22px;"><div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:#aab4b7;">DATE SUBMITTED</div><div style="font-size:15px;color:#22343a;margin-top:5px;font-weight:700;line-height:1.25;">'+esc(dateStr)+'</div><div style="font-family:Arial,sans-serif;font-size:12px;color:#8d999c;">'+esc(timeStr)+'</div></div>'
++'<div style="flex:1;padding-left:22px;"><div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:#aab4b7;">CHECKLIST TYPE</div><div style="font-size:15px;color:#22343a;margin-top:5px;font-weight:700;">'+esc(freq)+'</div><div style="font-family:Arial,sans-serif;font-size:12px;color:#8d999c;">'+(total-doneN)+' remaining at signing</div></div></div></div>';
+html += '<div style="padding:22px 46px 30px;">'+body+'</div>';
+if(rec.comments){ html += '<div style="padding:0 46px 18px;"><div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;color:#aab4b7;margin-bottom:8px;">COMMENTS</div><div style="font-family:Arial,sans-serif;font-size:14px;color:#22343a;background:#f6fafb;border:1px solid #e6edee;border-radius:12px;padding:14px 18px;">'+esc(rec.comments)+'</div></div>'; }
+html += '<div style="padding:6px 46px 34px;"><div style="border-top:1px solid #e3edef;padding-top:24px;display:flex;align-items:flex-end;justify-content:space-between;">'
++'<div style="min-width:0;"><div class="gv" style="font-size:40px;color:#0E7C89;line-height:1.1;white-space:nowrap;">'+esc(sigName)+'</div>'
++'<div style="border-top:1.5px solid #c2cdd0;margin-top:8px;padding-top:6px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:#5a6b70;">SIGNATURE &middot; RESIDENCE MANAGER</div></div>'
++'<div style="text-align:right;font-family:Arial,sans-serif;font-size:11px;color:#8a979b;line-height:1.8;flex:0 0 auto;padding-left:24px;"><div>Signed '+esc(dateStr)+'</div><div>'+esc(timeStr)+'</div></div></div></div>';
+html += '<div style="background:#0c2e34;border-top:3px solid #F6D10A;padding:18px 46px;display:flex;justify-content:space-between;align-items:center;">'
++'<div style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#F6D10A;">HASC Center</div>'
++'<div style="font-family:Arial,sans-serif;font-size:11px;color:#F6D10A;">Confidential &mdash; Internal Compliance &amp; Audit Use</div></div>';
+html += '</div>';
+return html;
 }
 function viewDoc(fname){
   var w = window.open('','_blank');
