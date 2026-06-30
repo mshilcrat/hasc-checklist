@@ -94,91 +94,51 @@ function tog(head){ head.parentElement.classList.toggle('open'); }
 function kd(e,head){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tog(head); } }
 function rmDocHtml(fname){
 var d = (window.__docReg||{})[fname];
-var rec = d && d.rec ? d.rec : null;
+var rec = d && d.rec ? d.rec : (d||{});
 var esc = function(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
-var css = '<style>'
-+ '@page{size:Letter;margin:0;}'
-+ '*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
-+ 'body{font-family:Georgia,"Times New Roman",serif;background:#e8eef0;color:#22343a;}'
-+ '.sheet{width:8.5in;min-height:11in;margin:0 auto;background:#fff;box-shadow:0 10px 40px rgba(12,46,52,.15);}'
-+ '@media print{body{background:#fff;}.sheet{width:auto;min-height:auto;box-shadow:none;margin:0;}}'
-+ '.gv{font-family:"Great Vibes",cursive;}'
-+ '</style>'
-+ '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap">';
-var logoEl = document.querySelector('header .brand img');
-var logo = logoEl ? logoEl.src : '';
-if(!rec || !rec.tasks_json){
-return css+'<div class="sheet" style="padding:48px;"><h1 style="color:#0c2e34;">'+esc(fname)+'</h1><p style="color:#5a6b70;">No itemized task data was recorded for this submission.</p></div>';
-}
-var tj = rec.tasks_json;
+var tj = rec.tasks_json || {};
 var items = (tj && tj.items) ? tj.items : [];
+var doneCount = items.filter(function(x){return x.done;}).length;
 var total = items.length;
-var doneN = items.filter(function(x){return x.done;}).length;
-var dt = rec.submitted_at ? new Date(rec.submitted_at) : null;
-var dateStr = dt ? dt.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}) : '';
-var timeStr = dt ? dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '';
-var freq = (tj.frequency||rec.frequency||'Daily'); freq = freq.charAt(0).toUpperCase()+freq.slice(1);
-var docId = (function(){ var s=String(rec.id||rec.home_name||fname); var h=0; for(var i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))>>>0;} return h.toString(16).toUpperCase().slice(0,8); })();
-var pct = total ? Math.round(doneN/total*100) : 0;
-var C = Math.PI*2*52; var off = C*(1-(total?doneN/total:0));
+var dt = rec.submitted_at ? new Date(rec.submitted_at) : new Date();
+var dateStr = dt.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+var timeStr = dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+var freqRaw = (tj.frequency || rec.frequency || 'Daily');
+var freq = freqRaw.charAt(0).toUpperCase()+freqRaw.slice(1);
+var signer = rec.signed_by || rec.submitted_by || '';
+var home = rec.home_name || fname;
+var NAVY='#0c2e34',CY='#3EC5D3',YEL='#F6D10A',GRN='#1E8E6A',GRAY='#5a6b70',TEAL='#0E7C89';
+var logoEl = document.querySelector('header .brand img');
+var logo = logoEl ? logoEl.src : (location.origin+'/hasc-logo.png');
 var sections;
-if(total===17){
-sections=[{t:'Daily Operations',a:0,b:5},{t:'Medical',a:5,b:9},{t:'Logs',a:9,b:16},{t:'Incidents',a:16,b:17}];
-} else {
-sections=[{t:freq+' Checklist',a:0,b:total}];
+if(total===17){ sections=[{t:'Daily Operations',a:0,b:5},{t:'Medical',a:5,b:9},{t:'Logs',a:9,b:16},{t:'Incidents',a:16,b:17}]; }
+else { sections=[{t:freq+' Checklist',a:0,b:total}]; }
+function row(it){
+  var box = it.done
+    ? '<span style="display:inline-block;width:16px;height:16px;border-radius:4px;background:'+CY+';position:relative;flex:0 0 auto;"><span style="position:absolute;left:3.5px;top:0px;color:#fff;font:bold 13px Arial;">&#10003;</span></span>'
+    : '<span style="display:inline-block;width:16px;height:16px;border-radius:4px;border:1.5px solid #c4d0d3;flex:0 0 auto;"></span>';
+  var col = it.done?NAVY:'#9aa7ab';
+  var status = it.done?'<span style="color:'+GRN+';font:600 11px Arial;flex:0 0 auto;">Done</span>':'<span style="color:#b3bcc0;font:600 11px Arial;flex:0 0 auto;">Pending</span>';
+  return '<div style="display:flex;align-items:center;gap:11px;padding:7px 2px;border-bottom:1px solid #f1f5f6;">'+box+'<span style="flex:1;font:14px/1.3 Arial;color:'+col+';">'+esc(it.name)+'</span>'+status+'</div>';
 }
-function card(s){
-var its = items.slice(s.a,s.b);
-var dn = its.filter(function(x){return x.done;}).length;
-var rows = its.map(function(x){
-var box = x.done
-? '<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;background:#1FA7B6;color:#fff;font-size:15px;flex:0 0 auto;">&#10003;</span>'
-: '<span style="display:inline-block;width:26px;height:26px;border-radius:7px;border:2px solid #d6dee0;background:#fff;flex:0 0 auto;"></span>';
-var pill = x.done
-? '<span style="font-family:Arial,sans-serif;font-size:12px;font-weight:600;color:#1FA7B6;background:#e7f6f8;padding:5px 13px;border-radius:14px;white-space:nowrap;">Completed</span>'
-: '<span style="font-family:Arial,sans-serif;font-size:12px;font-weight:600;color:#9aa6a9;background:#f1f4f5;padding:5px 13px;border-radius:14px;white-space:nowrap;">Not completed</span>';
-return '<div style="display:flex;align-items:center;gap:15px;padding:13px 4px;border-bottom:1px solid #f0f4f5;">'+box+'<div style="flex:1;font-family:Arial,sans-serif;font-size:14.5px;color:'+(x.done?'#22343a':'#9aa6a9')+';">'+esc(x.name)+'</div>'+pill+'</div>';
-}).join('');
-return '<div style="border:1px solid #e6edee;border-radius:16px;margin-top:16px;overflow:hidden;break-inside:avoid;">'
-+'<div style="display:flex;align-items:center;justify-content:space-between;background:#f6fafb;padding:15px 20px;border-bottom:1px solid #e6edee;">'
-+'<div style="display:flex;align-items:center;gap:13px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:#1FA7B6;color:#fff;font-size:13px;">&#9670;</span>'
-+'<span style="font-family:Arial,sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;color:#0c2e34;">'+esc(s.t.toUpperCase())+'</span></div>'
-+'<span style="font-family:Arial,sans-serif;font-size:13px;font-weight:600;color:#1FA7B6;background:#e7f6f8;padding:4px 13px;border-radius:13px;">'+dn+' / '+its.length+'</span></div>'
-+'<div style="padding:6px 20px 10px;">'+rows+'</div></div>';
+function section(s){
+  var its=items.slice(s.a,s.b); if(!its.length) return '';
+  var dn=its.filter(function(x){return x.done;}).length;
+  return '<div style="margin-bottom:14px;"><div style="display:flex;align-items:center;justify-content:space-between;background:#f4fafb;border-left:4px solid '+CY+';padding:7px 12px;border-radius:0 6px 6px 0;margin-bottom:2px;"><span style="font:700 12px Arial;letter-spacing:1.3px;color:'+NAVY+';text-transform:uppercase;">'+esc(s.t)+'</span><span style="font:700 11px Arial;color:'+TEAL+';">'+dn+' / '+its.length+'</span></div>'+its.map(row).join('')+'</div>';
 }
-var body = sections.map(card).join('');
-var sigName = rec.signature || rec.submitted_by || '';
-var html = css + '<div class="sheet">';
-html += '<div style="background:linear-gradient(180deg,#f2f9fa 0%,#ffffff 78%);padding:34px 46px 26px;border-bottom:1px solid #e3edef;">'
-+'<div style="display:flex;align-items:center;justify-content:space-between;">'
-+'<div style="display:flex;align-items:center;gap:22px;">'
-+'<div style="background:#fff;border:1px solid #e1ebed;border-radius:14px;padding:14px 20px;box-shadow:0 4px 14px rgba(14,124,137,.10);"><img src="'+logo+'" style="height:46px;width:auto;display:block;"></div>'
-+'<div style="border-left:2px solid #d6e6e8;padding-left:22px;"><div style="font-size:23px;font-weight:700;color:#0c2e34;line-height:1.1;">HASC Center</div>'
-+'<div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2.5px;color:#1FA7B6;margin-top:5px;">RESIDENTIAL MANAGEMENT</div></div></div>'
-+'<div style="display:inline-block;background:#0c2e34;color:#fff;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;padding:8px 16px;border-radius:20px;">COMPLIANCE RECORD</div></div>'
-+'<div style="margin-top:24px;"><div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;color:#1FA7B6;">SIGNED '+esc(freq.toUpperCase())+' COMPLIANCE CHECKLIST</div>'
-+'<div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:8px;"><div><div style="font-size:38px;font-weight:700;color:#0c2e34;line-height:1;">'+esc(rec.home_name||'')+'</div>'
-+'<div style="font-family:Arial,sans-serif;font-size:13px;color:#5a6b70;margin-top:8px;">'+esc(freq)+' operational compliance verification</div></div>'
-+'<div style="text-align:right;font-family:Arial,sans-serif;font-size:11px;color:#8a979b;line-height:1.7;"><div>Document ID &middot; '+docId+'</div><div>Generated '+(dt?dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'')+'</div></div></div></div></div>';
-html += '<div style="padding:26px 46px;border-bottom:1px solid #eef3f4;display:flex;align-items:center;">'
-+'<div style="flex:0 0 auto;display:flex;align-items:center;gap:18px;padding-right:26px;border-right:1px solid #eef3f4;">'
-+'<svg width="120" height="120" viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="#eef3f4" stroke-width="13"></circle>'
-+'<circle cx="60" cy="60" r="52" fill="none" stroke="#3EC5D3" stroke-width="13" stroke-linecap="round" stroke-dasharray="'+C+'" stroke-dashoffset="'+off+'" transform="rotate(-90 60 60)"></circle></svg>'
-+'<div><div style="font-size:24px;font-weight:700;color:#0c2e34;">'+doneN+' of '+total+'</div><div style="font-family:Arial,sans-serif;font-size:13px;color:#8d999c;">items completed</div></div></div>'
-+'<div style="flex:1;padding-left:26px;display:flex;">'
-+'<div style="flex:1;"><div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:#aab4b7;">RESIDENCE</div><div style="font-size:15px;color:#22343a;margin-top:5px;font-weight:700;">'+esc(rec.home_name||'')+'</div></div>'
-+'<div style="flex:1;padding-left:22px;"><div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:#aab4b7;">DATE SUBMITTED</div><div style="font-size:15px;color:#22343a;margin-top:5px;font-weight:700;line-height:1.25;">'+esc(dateStr)+'</div><div style="font-family:Arial,sans-serif;font-size:12px;color:#8d999c;">'+esc(timeStr)+'</div></div>'
-+'<div style="flex:1;padding-left:22px;"><div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:#aab4b7;">CHECKLIST TYPE</div><div style="font-size:15px;color:#22343a;margin-top:5px;font-weight:700;">'+esc(freq)+'</div><div style="font-family:Arial,sans-serif;font-size:12px;color:#8d999c;">'+(total-doneN)+' remaining at signing</div></div></div></div>';
-html += '<div style="padding:22px 46px 30px;">'+body+'</div>';
-if(rec.comments){ html += '<div style="padding:0 46px 18px;"><div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;color:#aab4b7;margin-bottom:8px;">COMMENTS</div><div style="font-family:Arial,sans-serif;font-size:14px;color:#22343a;background:#f6fafb;border:1px solid #e6edee;border-radius:12px;padding:14px 18px;">'+esc(rec.comments)+'</div></div>'; }
-html += '<div style="padding:6px 46px 34px;"><div style="border-top:1px solid #e3edef;padding-top:24px;display:flex;align-items:flex-end;justify-content:space-between;">'
-+'<div style="min-width:0;"><div class="gv" style="font-size:40px;color:#0E7C89;line-height:1.1;white-space:nowrap;">'+esc(sigName)+'</div>'
-+'<div style="border-top:1.5px solid #c2cdd0;margin-top:8px;padding-top:6px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:#5a6b70;">SIGNATURE &middot; RESIDENCE MANAGER</div></div>'
-+'<div style="text-align:right;font-family:Arial,sans-serif;font-size:11px;color:#8a979b;line-height:1.8;flex:0 0 auto;padding-left:24px;"><div>Signed '+esc(dateStr)+'</div><div>'+esc(timeStr)+'</div></div></div></div>';
-html += '<div style="background:#0c2e34;border-top:3px solid #F6D10A;padding:18px 46px;display:flex;justify-content:space-between;align-items:center;">'
-+'<div style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#F6D10A;">HASC Center</div>'
-+'<div style="font-family:Arial,sans-serif;font-size:11px;color:#F6D10A;">Confidential &mdash; Internal Compliance &amp; Audit Use</div></div>';
-html += '</div>';
+var colL, colR;
+if(sections.length===4){ colL=section(sections[0])+section(sections[1]); colR=section(sections[2])+section(sections[3]); }
+else { var mid=Math.ceil(items.length/2); colL=section({t:sections[0].t,a:0,b:mid}); colR=section({t:'(cont.)',a:mid,b:items.length}); }
+var css='<style>@page{size:8.5in 11in;margin:0;}@media print{html,body{background:#fff !important;margin:0 !important;padding:0 !important;}.sheet{box-shadow:none !important;margin:0 !important;}*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}}</style>';
+var fontLink='<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap">';
+var html = fontLink+css
++'<div class="sheet" style="box-sizing:border-box;width:8.5in;height:11in;margin:0 auto;background:#fff;padding:0;display:flex;flex-direction:column;font-family:Arial,sans-serif;">'
++'<div style="background:linear-gradient(135deg,#0c2e34,#0E7C89);padding:26px 46px;display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:18px;"><div style="background:#fff;border-radius:12px;padding:10px 16px;"><img src="'+logo+'" style="height:42px;display:block;"></div><div style="border-left:2px solid rgba(255,255,255,.3);padding-left:18px;"><div style="font:700 24px Arial;color:#fff;">HASC Center</div><div style="font:600 10px Arial;letter-spacing:2.5px;color:'+CY+';text-transform:uppercase;">Residential Management</div></div></div><div style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;font:700 10px Arial;letter-spacing:1.5px;padding:8px 16px;border-radius:20px;">COMPLIANCE RECORD</div></div>'
++'<div style="padding:22px 46px 16px;border-bottom:1px solid #e3eaec;display:flex;align-items:flex-end;justify-content:space-between;"><div><div style="font:700 11px Arial;letter-spacing:2.5px;color:'+CY+';text-transform:uppercase;">Signed '+freq+' Compliance Checklist</div><div style="font:700 30px Arial;color:'+NAVY+';margin-top:4px;">'+esc(home)+'</div><div style="font:13px Arial;color:'+GRAY+';margin-top:3px;">'+freq+' operational compliance verification</div></div><div style="text-align:right;font:12px Arial;color:'+GRAY+';line-height:1.7;"><div style="font:700 22px Arial;color:'+NAVY+';">'+doneCount+' / '+total+'</div><div>items completed</div><div style="margin-top:6px;">'+dateStr+'</div><div>'+timeStr+' &middot; '+freq+'</div></div></div>'
++'<div style="flex:1;padding:22px 46px;display:grid;grid-template-columns:1fr 1fr;gap:30px;align-content:start;"><div>'+colL+'</div><div>'+colR+'</div></div>'
++'<div style="padding:18px 46px;border-top:1px solid #e3eaec;display:flex;align-items:flex-end;justify-content:space-between;"><div><div style="font-family:\'Great Vibes\',cursive;font-size:40px;color:'+CY+';line-height:1;">'+esc(signer)+'</div><div style="font:700 10px Arial;letter-spacing:1.5px;color:'+GRAY+';margin-top:4px;text-transform:uppercase;">Signature &middot; Residence Manager</div></div><div style="text-align:right;font:11px Arial;color:'+GRAY+';line-height:1.6;">Signed '+dateStr+'<br>'+timeStr+'</div></div>'
++'<div style="background:'+NAVY+';padding:13px 46px;border-top:3px solid '+YEL+';display:flex;justify-content:space-between;font:700 10px Arial;"><span style="color:'+YEL+';">HASC Center</span><span style="color:'+YEL+';">Confidential &mdash; Internal Compliance &amp; Audit Use</span></div>'
++'</div>';
 return html;
 }
 function viewDoc(fname){
