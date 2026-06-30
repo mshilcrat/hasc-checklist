@@ -64,11 +64,11 @@ nav.tabs a.on{color:var(--teal);border-bottom-color:var(--teal)}
 </header>
 
 <nav class="tabs">
-<a href="wb-today.html">Today</a>
-<a href="wb-insights.html">Insights</a>
-<a href="wb-documents.html" class="on">Documents</a>
-<a href="wb-library.html">Library</a>
-<a href="wb-checklists.html">Checklists</a>
+<a href='/wb-today'>Today</a>
+<a href='/wb-insights'>Insights</a>
+<a class='on' href='/wb-documents'>Documents</a>
+<a href='/wb-library'>Library</a>
+<a href='/wb-checklists'>Checklists</a>
 </nav>
 
 <div class="wrap">
@@ -101,9 +101,12 @@ function viewDoc(fname){
 let docs=[];
 async function loadDocs(){
   try{
-    const {data,error}=await sb.from('cl_documents').select('*').order('date',{ascending:false});
-    docs=(error||!data)?[]:data.map(r=>({home:r.home_name,type:r.doc_type,name:r.name,date:r.date,url:r.url,version:r.version}));
-  }catch(e){ docs=[]; }
+    const dres=await sb.from('cl_documents').select('*').order('date',{ascending:false});
+    const filed=(dres.error||!dres.data)?[]:dres.data.map(r=>({home:r.home_name,type:r.doc_type,name:r.name,date:r.date,url:r.url,version:r.version,current:true,ok:true}));
+    const sres=await sb.from('cl_submissions').select('*').order('submitted_at',{ascending:false});
+    const subs=(sres.error||!sres.data)?[]:sres.data.map(r=>{ const dt=(r.submitted_at||'').slice(0,10); const freq=(r.frequency||'Checklist'); const fl=freq.charAt(0).toUpperCase()+freq.slice(1); return {home:r.home_name,type:'Signed Checklist',name:fl+' Checklist - '+dt+' ('+(r.tasks_done||0)+'/'+(r.tasks_total||0)+') - '+(r.submitted_by||'RM'),date:dt,url:'',version:'',current:true,ok:true}; });
+    docs=subs.concat(filed);
+  }catch(e){ console.error('loadDocs failed',e); docs=[]; }
   renderHomes();
 }
 
