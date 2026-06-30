@@ -133,6 +133,8 @@ if(he) throw he;
       const { data: libTasks, error: te } = await sb.from('cl_library').select('id'); const { data: offs } = await sb.from('cl_home_off').select('home_name, task_id');
 if(te) throw te;
 const { data: done, error: de } = await sb.from('cl_done').select('home_name, task_id').eq('done_date', today());
+      const { data: subsToday } = await sb.from('cl_submissions').select('home_name').gte('submitted_at', today()+'T00:00:00').lte('submitted_at', today()+'T23:59:59');
+      const subSet = new Set((subsToday||[]).map(function(s){ return s.home_name; }));
 if(de) throw de;
 
       const libTotal=(libTasks||[]).length; const offCount={}; (offs||[]).forEach(o=>{ offCount[o.home_name]=(offCount[o.home_name]||0)+1; }); const taskCount={}; (homes||[]).forEach(hm=>{ taskCount[hm.home_name]=libTotal-(offCount[hm.home_name]||0); });
@@ -143,7 +145,7 @@ let complete=0;
 const rows=(homes||[]).map(h=>{
 const tc=taskCount[h.home_name]||0;
 const dc=(doneSet[h.home_name]?doneSet[h.home_name].size:0);
-const isDone = tc>0 && dc>=tc;
+const isDone = subSet.has(h.home_name);
 if(isDone) complete++;
 return {home:h.home_name, rm:h.rm_email||'unassigned', tc, dc, done:isDone};
 });
