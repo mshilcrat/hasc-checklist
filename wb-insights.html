@@ -181,12 +181,14 @@ async function loadInsights(){
     const homes=homesR.data||[]; const libTotal=(libR.data||[]).length;
     const offBy={}; (offR.data||[]).forEach(o=>{offBy[o.home_name]=(offBy[o.home_name]||0)+1;});
     const doneBy={}; (doneR.data||[]).forEach(d=>{doneBy[d.home_name]=(doneBy[d.home_name]||0)+1;});
+    (function(){ var od={}; (subsR.data||[]).forEach(function(s){ if(s.submitted_at) od[String(s.submitted_at).slice(0,10)]=1; }); window.__orgDays = Math.max(1, Object.keys(od).length); })();
+    var orgDays = window.__orgDays;
     homeStats = homes.map(h=>{
       var hsubs = (subsR.data||[]).filter(function(s){ return s.home_name===h.home_name; });
       var dayset = {};
       hsubs.forEach(function(s){ if(s.submitted_at) dayset[String(s.submitted_at).slice(0,10)]=1; });
       var activeDays = Object.keys(dayset).length;
-      var pct = Math.min(100, Math.round(activeDays/30*100));
+      var pct = Math.min(100, Math.round(activeDays/orgDays*100));
       return { home:h.home_name, pct:pct, rm:h.rm_email||'', ac:h.ac_email||'' };
     }).sort((a,b)=>a.pct-b.pct);
     const wk=[0,0,0,0,0,0,0,0];
