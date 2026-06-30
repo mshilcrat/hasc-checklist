@@ -74,11 +74,11 @@ nav.tabs a.on{color:var(--teal);border-bottom-color:var(--teal)}
 </header>
 
 <nav class="tabs">
-<a href="wb-today.html" class="on">Today</a>
-<a href="wb-insights.html">Insights</a>
-<a href="wb-documents.html">Documents</a>
-<a href="wb-library.html">Library</a>
-<a href="wb-checklists.html">Checklists</a>
+<a class='on' href='/wb-today'>Today</a>
+<a href='/wb-insights'>Insights</a>
+<a href='/wb-documents'>Documents</a>
+<a href='/wb-library'>Library</a>
+<a href='/wb-checklists'>Checklists</a>
 </nav>
 
 <div class="wrap">
@@ -130,12 +130,12 @@ const wrap=document.getElementById('dash-rows');
 try{
 const { data: homes, error: he } = await sb.from('cl_homes').select('home_name, rm_email');
 if(he) throw he;
-const { data: tasks, error: te } = await sb.from('cl_tasks').select('id, home_name');
+      const { data: libTasks, error: te } = await sb.from('cl_library').select('id'); const { data: offs } = await sb.from('cl_home_off').select('home_name, task_id');
 if(te) throw te;
 const { data: done, error: de } = await sb.from('cl_done').select('home_name, task_id').eq('done_date', today());
 if(de) throw de;
 
-const taskCount={}; (tasks||[]).forEach(t=>{ taskCount[t.home_name]=(taskCount[t.home_name]||0)+1; });
+      const libTotal=(libTasks||[]).length; const offCount={}; (offs||[]).forEach(o=>{ offCount[o.home_name]=(offCount[o.home_name]||0)+1; }); const taskCount={}; (homes||[]).forEach(hm=>{ taskCount[hm.home_name]=libTotal-(offCount[hm.home_name]||0); });
 const doneSet={}; (done||[]).forEach(d=>{ (doneSet[d.home_name]=doneSet[d.home_name]||new Set()).add(d.task_id); });
 
 const total=(homes||[]).length;
