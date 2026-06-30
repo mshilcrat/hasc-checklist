@@ -99,11 +99,11 @@ nav.tabs a.on{color:var(--teal);border-bottom-color:var(--teal)}
 </header>
 
 <nav class="tabs">
-<a href="wb-today.html">Today</a>
-<a href="wb-insights.html" class="on">Insights</a>
-<a href="wb-documents.html">Documents</a>
-<a href="wb-library.html">Library</a>
-<a href="wb-checklists.html">Checklists</a>
+<a href='/wb-today'>Today</a>
+<a class='on' href='/wb-insights'>Insights</a>
+<a href='/wb-documents'>Documents</a>
+<a href='/wb-library'>Library</a>
+<a href='/wb-checklists'>Checklists</a>
 </nav>
 
 <div class="wrap">
@@ -167,7 +167,39 @@ function openDocsModal(){
 }
 function closeDocsModal(){ document.getElementById('docs-modal').classList.remove('show'); }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeDocsModal(); });
-renderInsights();
+
+async function loadInsights(){
+  try{
+    const since=new Date(Date.now()-30*864e5).toISOString().slice(0,10);
+    const [homesR, libR, offR, doneR, subsR] = await Promise.all([
+      sb.from('cl_homes').select('home_name, rm_email, ac_email'),
+      sb.from('cl_library').select('id'),
+      sb.from('cl_home_off').select('home_name, task_id'),
+      sb.from('cl_done').select('home_name, done_date, done_by').gte('done_date', since),
+      sb.from('cl_submissions').select('home_name, submitted_by, submitted_at, tasks_done, tasks_total, frequency').order('submitted_at',{ascending:false})
+    ]);
+    const homes=homesR.data||[]; const libTotal=(libR.data||[]).length;
+    const offBy={}; (offR.data||[]).forEach(o=>{offBy[o.home_name]=(offBy[o.home_name]||0)+1;});
+    const doneBy={}; (doneR.data||[]).forEach(d=>{doneBy[d.home_name]=(doneBy[d.home_name]||0)+1;});
+    homeStats = homes.map(h=>{
+      const expected=Math.max(1, libTotal-(offBy[h.home_name]||0));
+      const done=doneBy[h.home_name]||0;
+      const pct=Math.min(100, Math.round(done/expected*100));
+      return { home:h.home_name, pct:pct, rm:h.rm_email||'', ac:h.ac_email||'' };
+    }).sort((a,b)=>a.pct-b.pct);
+    const wk=[0,0,0,0,0,0,0,0];
+    (doneR.data||[]).forEach(d=>{ const days=Math.floor((Date.now()-new Date(d.done_date).getTime())/864e5); const idx=7-Math.min(7,Math.floor(days/7)); if(idx>=0) wk[idx]++; });
+    const maxw=Math.max(1,...wk);
+    weeks = wk.map((c,i)=>({ w:'W'+(i+1), pct:Math.round(c/maxw*100) }));
+    rmStats = homeStats.slice(0,12).map(h=>({ rm:(h.rm||'-').split('@')[0], home:h.home, pct:h.pct, streak:0, trend:'fl' }));
+    const acMap={};
+    homeStats.forEach(h=>{ const k=(h.ac||'-').split('@')[0]; (acMap[k]=acMap[k]||[]).push(h); });
+    acStats = Object.keys(acMap).map(k=>{ const arr=acMap[k]; const avg=Math.round(arr.reduce((s,x)=>s+x.pct,0)/arr.length); return { ac:k, pct:avg, homes:arr.length, behind:arr.filter(x=>x.pct<75).length }; });
+    sinceLast=(subsR.data||[]).slice(0,8).map(s=>({ doc:(s.frequency||'Checklist')+' checklist', home:s.home_name, time:new Date(s.submitted_at).toLocaleString() }));
+  }catch(e){ console.error('insights load failed', e); homeStats=[]; }
+  renderInsights();
+}
+loadInsights();
 </script>
 </body>
 </html>
