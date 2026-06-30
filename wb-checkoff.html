@@ -106,6 +106,7 @@
 <div class="nav-user">
 <div class="nav-avatar" id="nav-avatar">RM</div>
 <div><div class="nu-name" id="nav-name">Residence Manager</div></div>
+<button id="signoutBtn" onclick="rmSignOut()" style="margin-left:8px;background:#fff;border:1px solid var(--border);border-radius:16px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--text-secondary);cursor:pointer;">Sign out</button>
 </div>
 </header>
 
@@ -336,7 +337,7 @@ async function submitChecklist(){
   try{
     var res=await sb.from('cl_done').insert(rows);
     if(res.error) throw res.error;
-          try{ var totalCount=0; FREQS.forEach(function(f){ totalCount+=Object.keys(state[f]||{}).length; }); await sb.from('cl_submissions').insert([{ home_name: currentHome, submitted_by:(signerName||'RM'), frequency: (document.querySelector('.checklist.active')?document.querySelector('.checklist.active').id.replace('list-',''):'daily'), tasks_done: doneUuids.length, tasks_total: totalCount, comments: (document.getElementById('comments')?document.getElementById('comments').value:''), signature:(signerName||'RM') }]); }catch(subErr){ console.warn('submission log failed', subErr); }
+          try{ var totalCount=0; FREQS.forEach(function(f){ totalCount+=Object.keys(state[f]||{}).length; }); await sb.from('cl_submissions').insert([{ home_name: currentHome, submitted_by:(signerName||'RM'), frequency: (document.querySelector('.checklist.active')?document.querySelector('.checklist.active').id.replace('list-',''):'daily'), tasks_done: doneUuids.length, tasks_total: totalCount, comments: (document.getElementById('comments')?document.getElementById('comments').value:''), signature:(signerName||'RM'), tasks_json: rmBuildTasksJson() }]); }catch(subErr){ console.warn('submission log failed', subErr); }
     btn.textContent='✓ Submitted'; toast('✓ Checklist submitted');
   }catch(err){ btn.textContent='Submit signed checklist'; btn.disabled=false; toast('Could not submit: '+(err.message||err)); }
 }
@@ -352,5 +353,48 @@ function switchFreq(freq, el){
 
 boot();
 </script>
+
+<script>
+// --- RM portal fixes: tasks_json builder, header name, sign out ---
+function rmBuildTasksJson(){
+  try{
+    var active = document.querySelector('.checklist.active');
+    var freq = active ? active.id.replace('list-','') : 'daily';
+    var items = [];
+    if(active){
+      active.querySelectorAll('.task-card').forEach(function(card){
+        var nm = card.querySelector('.task-name');
+        if(nm){ items.push({ name: nm.textContent.trim(), done: card.classList.contains('checked') }); }
+      });
+    }
+    return { frequency: freq, items: items };
+  }catch(e){ return null; }
+}
+function rmSignOut(){
+  try{
+    if(window.sb && sb.auth){ sb.auth.signOut().finally(function(){ location.href='wb-login.html'; }); }
+    else { location.href='wb-login.html'; }
+  }catch(e){ location.href='wb-login.html'; }
+}
+(async function rmSetHeaderName(){
+  try{
+    if(!window.sb || !sb.auth) return;
+    var s = await sb.auth.getSession();
+    var email = s && s.data && s.data.session ? s.data.session.user.email : null;
+    if(!email) return;
+    var nm = email.split('@')[0];
+    var prof = await sb.from('profiles').select('full_name').eq('email', email).maybeSingle();
+    if(prof && prof.data && prof.data.full_name) nm = prof.data.full_name;
+    var nameEl = document.getElementById('nav-name');
+    var avEl = document.getElementById('nav-avatar');
+    if(nameEl) nameEl.textContent = nm;
+    if(avEl){
+      var parts = nm.trim().split(/\s+/);
+      avEl.textContent = (parts[0][0]||'R') + (parts[1]?parts[1][0]:'');
+    }
+  }catch(e){}
+})();
+</script>
+
 </body>
 </html>
