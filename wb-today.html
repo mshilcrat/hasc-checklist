@@ -47,7 +47,7 @@ nav.tabs a.on{color:var(--teal);border-bottom-color:var(--teal)}
 .row-head{display:flex;align-items:center;gap:12px;padding:14px 4px;cursor:pointer}
 .row-head:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:6px}
 .dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
-.dot.g{background:var(--green)} .dot.r{background:var(--red)}
+.dot.g{background:var(--green)} .dot.r{background:var(--red)} .dot.y{background:var(--amber)}
 .row-title{flex:1;font-size:17px}
 .row-meta{font-size:13px;color:var(--ink-3)}
 .chev{font-size:13px;color:var(--ink-3);transition:transform .15s;width:14px;text-align:center}
@@ -164,7 +164,7 @@ else{
 body='<div class="rm">'+d.rm+'</div><div class="sent">'+d.dc+' of '+d.tc+' tasks done today</div>';
 }
 wrap.insertAdjacentHTML('beforeend',
-'<div class="row"><div class="row-head" tabindex="0" role="button" onclick="tog(this)" onkeydown="kd(event,this)"><span class="dot '+(d.done?'g':'r')+'"></span><span class="row-title">'+d.home+'</span><span class="row-meta">'+(d.done?'':d.rm)+'</span><span class="chev">▶</span></div><div class="row-body">'+body+'</div></div>');
+'<div class="row"><div class="row-head" tabindex="0" role="button" onclick="tog(this)" onkeydown="kd(event,this)"><span class="dot '+(d.done?'g':(d.dc>0?'y':'r'))+'"></span><span class="row-title">'+d.home+'</span><span class="row-meta">'+(d.done?'':d.rm)+'</span><span class="chev">▶</span></div><div class="row-body">'+body+'</div></div>');
 });
 }catch(e){
 console.error('loadDash failed', e);
