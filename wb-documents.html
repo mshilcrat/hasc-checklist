@@ -7,7 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="wb-config.js"></script>
   <script src="wb-guard.js"></script>
-  <script src="wb-flip.js"></script>
+  <script src="wb-flip.js"></script>h
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;background:#f6f7f5;color:#26302e;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
@@ -67,7 +67,7 @@ nav.tabs a.on{color:var(--teal);border-bottom-color:var(--teal)}
 <a href='/wb-today'>Today</a>
 <a href='/wb-insights'>Insights</a>
 <a class='on' href='/wb-documents'>Documents</a>
-<a href='/wb-library'>Library</a>
+<a href='/wb-library' style="display:none">Library</a>
 <a href='/wb-checklists'>Checklists</a>
 </nav>
 
@@ -142,12 +142,12 @@ var html = fontLink+css
 return html;
 }
 function viewDoc(fname){
-  var w = window.open('','_blank');
-  if(w){ w.document.write('<title>'+fname+'</title>'+rmDocHtml(fname)); w.document.close(); }
+  /* view: */
+  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+fname+'</title></head><body>'+rmDocHtml(fname)+'</body></html>'; var url=URL.createObjectURL(new Blob([html],{type:'text/html'})); var w2=window.open(url,'_blank'); if(!w2){ location.href=url; }
 }
 function rmPrintDoc(fname){
-  var w = window.open('','_blank');
-  if(w){ w.document.write('<title>'+fname+'</title>'+rmDocHtml(fname)); w.document.close(); w.focus(); setTimeout(function(){ try{w.print();}catch(e){} }, 400); }
+  /* view: */
+  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+fname+'</title></head><body onload="setTimeout(function(){window.print();},300)">'+rmDocHtml(fname)+'</body></html>'; var url=URL.createObjectURL(new Blob([html],{type:'text/html'})); var w3=window.open(url,'_blank'); if(!w3){ location.href=url; }
 }
 function rmDownloadDoc(fname){
   try{
