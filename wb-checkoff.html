@@ -208,7 +208,7 @@ function toast(msg){ var t=document.getElementById('toast'); t.textContent=msg; 
 
 async function boot(){
   // load homes
-  try{ var h = await sb.from('cl_homes').select('home_name,rm_email').order('home_name'); homes = (h.error||!h.data)?[]:h.data; if((window.__rmRole==="residence_manager")&&window.__rmEmail){ var __em=window.__rmEmail.toLowerCase(); homes=(homes||[]).filter(function(x){return x&&x.rm_email&&String(x.rm_email).toLowerCase()===__em;}); } }catch(e){ homes=[]; }
+  try{ var h = await sb.from('cl_homes').select('home_name,rm_email').order('home_name'); homes = (h.error||!h.data)?[]:h.data; if(window.__rmRole!=="admin"){ var __my=[]; try{ __my=JSON.parse(sessionStorage.getItem("hasc_homes")||"[]"); }catch(e){ __my=[]; } homes=(homes||[]).filter(function(x){ return x && x.home_name && __my.indexOf(x.home_name)!==-1; }); } }catch(e){ homes=[]; }
   var sel = document.getElementById('home-sel');
   sel.innerHTML = homes.map(function(x){ return '<option value="'+x.home_name.replace(/"/g,'&quot;')+'">'+x.home_name+'</option>'; }).join('');
   sel.addEventListener('change', function(){ currentHome = sel.value; loadHome(); });
