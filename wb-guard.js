@@ -14,7 +14,7 @@
           if(p && p.data){
             try{
               sessionStorage.setItem("hasc_role", p.data.role || "");
-              sessionStorage.setItem("hasc_homes", JSON.stringify(p.data.residences || []));
+              sessionStorage.setItem("hasc_homes", JSON.stringify(p.data.residences || [])); try{ var __role=(p.data.role||""); var __page=(location.pathname.split("/").pop()||"").toLowerCase(); if(__role==="residence_manager" && __page!=="wb-checkoff.html"){ location.replace("wb-checkoff.html"); return; } }catch(__e){}
             }catch(e){}
           }
         });
