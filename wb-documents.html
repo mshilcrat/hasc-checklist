@@ -47,7 +47,7 @@ nav.tabs a.on{color:var(--teal);border-bottom-color:var(--teal)}
 .docline{display:flex;align-items:center;gap:11px;padding:11px 4px 11px 35px;border-bottom:1px solid var(--line-soft);cursor:pointer}
 .docline:hover{background:var(--bg)}
 .docline .d-ico{font-size:16px;opacity:.7}
-.docline .d-name{flex:1;font-size:16px}
+.docline .d-name{flex:1;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row-head .d-ico{font-size:16px}
 .abtn{font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;padding:8px 17px;border-radius:8px;background:#fff;border:1px solid var(--line);color:var(--ink-2)}
 .abtn.av{color:var(--teal);border-color:rgba(0,130,114,.4)}
@@ -182,7 +182,7 @@ function renderHomes(){
   homes.forEach(home=>{
     const list=byHome[home].slice().sort((a,b)=>a.type.localeCompare(b.type));
     const lines=list.map(d=>{
-      const fname=d.home+' – '+d.type+' – '+d.date;
+      const fname=d.home+' – '+d.type+' – '+(function(x){var m=String(x||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[2]+'-'+m[3]+'-'+m[1]:x;})(d.date);
       window.__docReg=window.__docReg||{}; window.__docReg[fname]=d; return '<div class="docline" onclick="viewDoc(\''+fname+'\')"><span class="d-ico">📄</span><span class="d-name">'+fname+'</span><button class="abtn av" onclick="event.stopPropagation();viewDoc(\''+fname+'\')">View</button><button class="abtn dl" onclick="event.stopPropagation();rmDownloadDoc(\''+fname+'\')">Download</button><button class="abtn pr" onclick="event.stopPropagation();rmPrintDoc(\''+fname+'\')">Print</button></div>';
     }).join('');
     wrap.insertAdjacentHTML('beforeend','<div class="row'+(q?' open':'')+'"><div class="row-head" tabindex="0" role="button" onclick="tog(this)" onkeydown="kd(event,this)"><span class="d-ico" style="opacity:.6">📁</span><span class="row-title">'+home+'</span><span class="row-meta">'+list.length+' files</span><span class="chev">▶</span></div><div class="row-body" style="padding:0 0 8px 0">'+lines+'</div></div>');
