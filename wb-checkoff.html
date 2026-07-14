@@ -238,6 +238,14 @@ async function loadHome(){
   // this home's removed tasks
   var off = {};
   try{ var o = await sb.from('cl_home_off').select('task_id').eq('home_name', currentHome); if(!o.error&&o.data){ o.data.forEach(function(x){ off[x.task_id]=true; }); } }catch(e){}
+  // this home's checks already done today
+  var doneToday = {};
+  try{
+    var __today=new Date().toISOString().slice(0,10);
+    var dq = await sb.from('cl_done').select('task_id').eq('home_name', currentHome).eq('done_date', __today);
+    if(!dq.error&&dq.data){ dq.data.forEach(function(x){ doneToday[x.task_id]=true; }); }
+  }catch(e){}
+  window.__doneToday = doneToday;
 
   // build tasks structure grouped by freq -> section, excluding removed
   var byFreqSec = {};
@@ -271,7 +279,8 @@ function buildList(freq){
     groupEl.innerHTML='<div class="section-title">'+group.sec+'</div>';
     group.items.forEach(function(item){
       var taskId=freq+'-'+idx; idx++; taskIndex[taskId]=item.id;
-      var card=document.createElement('div'); card.className='task-card'; card.id=taskId;
+      if(window.__doneToday && window.__doneToday[item.id]){ state[freq][taskId]=true; }
+      var card=document.createElement('div'); card.className='task-card'+((window.__doneToday&&window.__doneToday[item.id])?' checked':''); card.id=taskId;
       card.innerHTML='<div class="task-row" onclick="toggleTask(\''+taskId+'\',\''+freq+'\')">'+
         '<div class="task-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'+
         '<div class="task-body"><div class="task-name">'+item.name+'</div><div class="task-meta-done">✓ Completed just now</div></div></div>';
@@ -282,11 +291,29 @@ function buildList(freq){
   updateCounts(freq);
 }
 
-function toggleTask(taskId,freq){
+async function toggleTask(taskId,freq){
   var card=document.getElementById(taskId); card.classList.toggle('checked');
-  state[freq][taskId]=card.classList.contains('checked');
+  var checked=card.classList.contains('checked');
+  state[freq][taskId]=checked;
   updateCounts(freq); updateProgress();
-  toast(card.classList.contains('checked')?'✓ Saved':'Unchecked');
+  var uuid=taskIndex[taskId];
+  var today=new Date().toISOString().slice(0,10);
+  if(!uuid){ toast(checked?'✓ Saved':'Unchecked'); return; }
+  try{
+    if(checked){
+      var res=await sb.from('cl_done').insert([{ home_name: currentHome, task_id: uuid, done_by: (signerName||window.__rmEmail||'RM'), done_date: today }]);
+      if(res.error) throw res.error;
+      toast('✓ Saved');
+    } else {
+      var del=await sb.from('cl_done').delete().eq('home_name', currentHome).eq('task_id', uuid).eq('done_date', today);
+      if(del.error) throw del.error;
+      toast('Unchecked');
+    }
+  }catch(e){
+    card.classList.toggle('checked'); state[freq][taskId]=card.classList.contains('checked');
+    updateCounts(freq); updateProgress();
+    toast('Could not save: '+(e.message||e));
+  }
 }
 
 function countItems(freq){
