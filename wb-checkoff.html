@@ -241,7 +241,7 @@ async function loadHome(){
   // this home's checks already done today
   var doneToday = {};
   try{
-    var __today=new Date().toISOString().slice(0,10);
+    var __today=(function(){var d=new Date();var p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);var o={};p.forEach(function(x){o[x.type]=x.value;});return o.year+'-'+o.month+'-'+o.day;})();
     var dq = await sb.from('cl_done').select('task_id').eq('home_name', currentHome).eq('done_date', __today);
     if(!dq.error&&dq.data){ dq.data.forEach(function(x){ doneToday[x.task_id]=true; }); }
   }catch(e){}
@@ -297,7 +297,7 @@ async function toggleTask(taskId,freq){
   state[freq][taskId]=checked;
   updateCounts(freq); updateProgress();
   var uuid=taskIndex[taskId];
-  var today=new Date().toISOString().slice(0,10);
+  var today=(function(){var d=new Date();var p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);var o={};p.forEach(function(x){o[x.type]=x.value;});return o.year+'-'+o.month+'-'+o.day;})();
   if(!uuid){ toast(checked?'✓ Saved':'Unchecked'); return; }
   try{
     if(checked){
@@ -359,7 +359,7 @@ async function submitChecklist(){
   if(!isSigned){ toast('Please sign first'); return; }
   if(!doneUuids.length){ toast('Tick at least one task'); return; }
   btn.disabled=true; btn.textContent='Submitting…';
-  var today=new Date().toISOString().slice(0,10);
+  var today=(function(){var d=new Date();var p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);var o={};p.forEach(function(x){o[x.type]=x.value;});return o.year+'-'+o.month+'-'+o.day;})();
   var rows=doneUuids.map(function(id){ return { home_name: currentHome, task_id: id, done_by: (signerName||'RM'), done_date: today }; });
   try{
     var res=await sb.from('cl_done').insert(rows);
