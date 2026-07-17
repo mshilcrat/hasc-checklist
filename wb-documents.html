@@ -165,7 +165,7 @@ async function loadDocs(){
     const dres=await sb.from('cl_documents').select('*').order('date',{ascending:false});
     const filed=(dres.error||!dres.data)?[]:dres.data.map(r=>({home:r.home_name,type:r.doc_type,name:r.name,date:r.date,url:r.url,version:r.version,current:true,ok:true}));
     const sres=await sb.from('cl_submissions').select('*').order('submitted_at',{ascending:false});
-    const subs=(sres.error||!sres.data)?[]:sres.data.map(r=>{ const dt=(r.submitted_at||'').slice(0,10); const freq=(r.frequency||'Checklist'); const fl=freq.charAt(0).toUpperCase()+freq.slice(1); return {home:r.home_name,type:'Signed Checklist',name:fl+' Checklist - '+dt+' ('+(r.tasks_done||0)+'/'+(r.tasks_total||0)+') - '+(r.submitted_by||'RM'),date:dt,url:'',version:'',current:true,ok:true,rec:r}; });
+    const subs=(sres.error||!sres.data)?[]:sres.data.map(r=>{ const dt=(function(iso){var d=new Date(iso);if(isNaN(d.getTime()))return String(iso||'').slice(0,10);var y=d.getFullYear();var m=('0'+(d.getMonth()+1)).slice(-2);var da=('0'+d.getDate()).slice(-2);return y+'-'+m+'-'+da;})(r.submitted_at); const freq=(r.frequency||'Checklist'); const fl=freq.charAt(0).toUpperCase()+freq.slice(1); return {home:r.home_name,type:'Signed Checklist',name:fl+' Checklist - '+dt+' ('+(r.tasks_done||0)+'/'+(r.tasks_total||0)+') - '+(r.submitted_by||'RM'),date:dt,url:'',version:'',current:true,ok:true,rec:r}; });
     docs=subs.concat(filed);
   }catch(e){ console.error('loadDocs failed',e); docs=[]; }
   renderHomes();
