@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HASC RM Compliance</title>
-<script src="wb-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="wb-config.js"></script>
 <script src="wb-guard.js"></script>
 <style>
   * { box-sizing:border-box; }
@@ -55,7 +56,7 @@
     { id:"insights",   href:"wb-insights-mark2.html",   icon:"\uD83D\uDCCA", title:"Insights",   desc:"Compliance trends by home and by cycle." },
     { id:"documents",  href:"wb-documents-mark2.html",  icon:"\uD83D\uDCC4", title:"Documents",  desc:"Grab or print the latest signed checklist for any home." },
     { id:"checklists", href:"wb-checklists-mark2.html", icon:"\uD83D\uDCCB", title:"Checklists", desc:"Open and manage the checklists behind every residence." },
-    { id:"inbox",      href:"wb-inbox-mark2.html",      icon:"\uD83D\uDCE5", title:"Inbox",      desc:"Newly signed documents land here \u2014 mark each Handled once filed." }
+    { id:"inbox",      href:"wb-inbox-mark2.html",      icon:"\uD83D\uDCE5", title:"Inbox",      desc:"Newly signed documents land here — mark each Handled once filed." }
   ];
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
   var wrap = document.getElementById("cubes");
