@@ -5,22 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HASC RM Compliance</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="wb-config.js"></script>
+<script src="wb-config.js"></script>
 <script src="wb-guard.js"></script>
-  <script>
-    if(window.supabase && window.HASC_CONFIG && !window.__hascClient){
-      window.__hascClient = window.supabase.createClient(window.HASC_CONFIG.SUPABASE_URL, window.HASC_CONFIG.SUPABASE_ANON_KEY);
-    }
-  </script>
-  
 <style>
   * { box-sizing:border-box; }
   body { margin:0; background:#eef2f5; color:#223038;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
   .topbar { background:#fff; border-bottom:3px solid #17a2b8;
     display:flex; align-items:center; gap:16px; padding:12px 24px; flex-wrap:wrap; }
-  .logo { display:flex; align-items:center; gap:9px; font-weight:800; color:#17a2b8; letter-spacing:.5px; }
+  .logo { display:flex; align-items:center; gap:9px; }
+  .logo-mark { height:34px; width:auto; display:block; font-weight:800; color:#17a2b8; letter-spacing:.5px; }
   .page-label { color:#8a97a1; font-size:15px; padding-left:14px; border-left:1px solid #e2e8ec; }
+  .navbtns { display:flex; gap:9px; margin-left:4px; }
+  .navbtn { display:inline-flex; align-items:center; gap:6px; background:#fff; border:1px solid #dbe3e8;
+    border-radius:9px; padding:7px 14px; font-size:14px; font-weight:600; color:#3a4a54; cursor:pointer; }
+  .navbtn:hover { border-color:#17a2b8; color:#17a2b8; }
+  .navbtn[disabled] { opacity:.4; cursor:default; }
+  .navbtn[disabled]:hover { border-color:#dbe3e8; color:#3a4a54; }
   .whoami { margin-left:auto; display:flex; align-items:center; gap:10px; }
   .badge { width:36px; height:36px; border-radius:50%; background:#1a9d5a; color:#fff;
     font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center; }
@@ -29,64 +30,284 @@
   .screen-title { font-size:25px; font-weight:700; margin:0 0 4px; }
   .screen-sub { font-size:15px; color:#6a7b86; margin:0 0 24px; }
   .cubes { display:grid; grid-template-columns:repeat(4,235px); gap:22px; justify-content:start; align-items:stretch; }
-  .cube { background:#fff; border:1px solid #edf1f4; border-radius:10px;
-    box-shadow:0 1px 3px rgba(34,48,56,.06); padding:22px 20px 26px; cursor:pointer; text-decoration:none; color:inherit; display:block;
-    transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+  .cube { background:#fff; border:1px solid #edf1f4; border-radius:10px; box-shadow:0 1px 3px rgba(34,48,56,.06);
+    padding:22px 20px 26px; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
   .cube:hover { transform:translateY(-2px); box-shadow:0 8px 18px rgba(34,48,56,.12); border-color:#dfe7ec; }
   .cube-icon { font-size:26px; line-height:1; display:block; margin-bottom:22px; }
   .cube-title { font-weight:700; font-size:15.5px; margin:0 0 8px; color:#1f2d36; }
   .cube-desc { font-size:13.5px; color:#7a8894; line-height:1.55; }
+  .callout { background:#fff; border-left:4px solid #17a2b8; border-radius:10px; padding:15px 20px;
+    box-shadow:0 2px 8px rgba(34,48,56,.08); margin-bottom:22px; font-size:14px; color:#3a4a54; line-height:1.5; }
+  .callout b { color:#223038; }
+  .btn-teal { background:#17a2b8; color:#fff; border:none; border-radius:8px; padding:8px 16px; font-weight:600; font-size:13px; cursor:pointer; }
+  .btn-teal:hover { background:#1490a3; }
+  .btn-outline { background:#fff; color:#17a2b8; border:1px solid #cfe6ea; border-radius:8px; padding:8px 16px; font-weight:600; font-size:13px; cursor:pointer; }
+  .btn-outline:hover { border-color:#17a2b8; }
+  .coord { background:#fff; border-radius:14px; box-shadow:0 2px 8px rgba(34,48,56,.08); margin-bottom:14px; overflow:hidden; }
+  .coord-head { display:flex; align-items:center; gap:16px; padding:18px 22px; cursor:pointer; }
+  .coord.attention > .coord-head { background:#fdf2f2; }
+  .rank { font-size:22px; font-weight:800; color:#c3ccd2; width:40px; flex:0 0 40px; }
+  .coord-main { flex:1; }
+  .coord-name { font-weight:700; font-size:16px; }
+  .attn { color:#d64545; font-weight:700; font-size:12.5px; margin-left:8px; }
+  .coord-sub { color:#7a8894; font-size:13px; margin-top:3px; }
+  .coord-pct { font-weight:800; font-size:17px; }
+  .mini-caret { color:#b3c0c8; margin-left:14px; font-size:13px; transition:transform .15s ease; }
+  .coord.open > .coord-head .mini-caret, .res.open .mini-caret { transform:rotate(90deg); color:#17a2b8; }
+  .res { display:flex; align-items:center; gap:12px; padding:13px 22px; border-top:1px solid #f0f3f5; cursor:pointer; }
+  .res:hover { background:#f9fbfc; }
+  .dot { width:10px; height:10px; border-radius:50%; flex:0 0 10px; }
+  .res-name { font-weight:500; }
+  .res-staff { color:#95a3ad; font-size:13px; margin-left:auto; }
+  .res-pct { font-weight:700; font-size:14px; width:50px; text-align:right; }
+  .toolbar { display:flex; gap:12px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+  .search { flex:1; min-width:220px; display:flex; align-items:center; gap:8px; background:#fff; border-radius:10px; padding:9px 14px; box-shadow:0 2px 8px rgba(34,48,56,.06); }
+  .search input { border:none; outline:none; flex:1; font-size:14px; background:transparent; color:#223038; }
+  .inp { padding:9px 12px; border:1px solid #d8e0e5; border-radius:8px; background:#fff; font-size:14px; color:#223038; }
+  .list { background:#fff; border-radius:14px; box-shadow:0 2px 8px rgba(34,48,56,.08); overflow:hidden; }
+  .empty { padding:26px 20px; color:#7a8894; font-size:14px; text-align:center; }
+  .doc-label { font-size:11.5px; font-weight:700; letter-spacing:.9px; color:#9aa7b0; margin:0 0 12px 2px; }
+  .folder { background:#fff; border:1px solid #edf1f4; border-radius:12px; box-shadow:0 1px 3px rgba(34,48,56,.06); margin-bottom:12px; overflow:hidden; }
+  .folder-head { display:flex; align-items:center; gap:11px; padding:15px 20px; cursor:pointer; }
+  .folder-head:hover { background:#fafcfd; }
+  .folder-name { font-size:15.5px; font-weight:500; }
+  .folder-count { margin-left:auto; color:#9aa7b0; font-size:13px; }
+  .sumbar { display:flex; gap:14px; margin-bottom:16px; flex-wrap:wrap; }
+  .stat { background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(34,48,56,.08); padding:16px 20px; flex:1; min-width:140px; }
+  .stat .n { font-size:26px; font-weight:800; }
+  .stat .l { font-size:13px; color:#7a8894; margin-top:2px; }
+  .today-row { display:flex; align-items:center; gap:12px; padding:13px 20px; border-bottom:1px solid #f0f3f5; }
+  .today-row:last-child { border-bottom:none; }
+  .t-status { margin-left:auto; font-size:13px; font-weight:600; }
+  .sec-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:22px 2px 10px; font-size:13px; font-weight:700; color:#5b6b78; }
+  .inbox-item { background:#fff; border-radius:12px; box-shadow:0 1px 3px rgba(34,48,56,.06); padding:15px 20px; margin-bottom:12px; }
+  .inbox-top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .inbox-res { color:#17a2b8; font-weight:700; font-size:14px; }
+  .inbox-date { color:#9aa7b0; font-size:12.5px; white-space:nowrap; }
+  .inbox-body { color:#33424c; font-size:14px; margin:8px 0 4px; }
+  .inbox-by { color:#95a3ad; font-size:12.5px; }
+  .cl-controls { display:flex; gap:22px; flex-wrap:wrap; margin-bottom:18px; }
+  .fl { display:block; font-size:12px; color:#7a8894; margin-bottom:6px; font-weight:600; }
+  .panel { background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(34,48,56,.08); overflow:hidden; }
+  .panel-head { display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1px solid #eef2f5; font-weight:700; font-size:15px; }
+  .count { background:#eef2f5; color:#5b6b78; border-radius:999px; padding:2px 11px; font-size:12px; font-weight:700; }
+  .panel-body { max-height:520px; overflow:auto; padding:4px 0 10px; }
+  .grp { padding:14px 18px 5px; font-size:11px; font-weight:700; letter-spacing:.4px; color:#9aa7b0; }
+  .task { display:flex; gap:9px; align-items:center; padding:7px 14px 7px 18px; font-size:14px; line-height:1.35; }
+  .task .mk { flex:0 0 14px; font-weight:700; color:#1a9d5a; }
+  .task-text { flex:1; }
+  .loading { padding:40px 20px; text-align:center; color:#8a97a1; font-size:14px; }
   @media (max-width:1080px){ .cubes { grid-template-columns:repeat(3,235px); } }
   @media (max-width:820px){ .cubes { grid-template-columns:repeat(2,235px); } }
   @media (max-width:560px){ .cubes { grid-template-columns:1fr; } .page-label { display:none; } }
-
-  .m2badge{display:inline-block;background:#0aa6b7;color:#fff;font-size:11px;font-weight:800;letter-spacing:1px;padding:3px 8px;border-radius:6px;vertical-align:middle;margin-left:6px}
 </style>
 </head>
 <body>
   <header class="topbar">
-    <div class="logo">HASC CENTER</div> <span class="m2badge">MARK 2</span>
-    <div class="page-label">RM Compliance</div>
-    <div class="whoami"><div class="badge" id="badge">--</div><div class="user-name" id="userName">Loading...</div></div>
+    <div class="logo"><span class="logo-mark">HASC CENTER</span></div>
+    <div class="page-label" id="pageLabel">RM Compliance</div>
+    <div class="navbtns">
+      <button class="navbtn" id="backBtn">&larr; Back</button>
+      <button class="navbtn" id="homeBtn">&#127968; Home</button>
+    </div>
+    <div class="whoami"><div class="badge" id="badge">--</div><div class="user-name" id="userName">Loading…</div></div>
   </header>
-  <main class="container">
-    <h1 class="screen-title" id="welcome">Welcome back</h1>
-    <p class="screen-sub">Choose where you want to go.</p>
-    <div class="cubes" id="cubes"></div>
-  </main>
+  <main class="container" id="view"><div class="loading">Loading your data…</div></main>
 <script>
-  // Hub = launcher. Each tile links to a standalone spoke module.
-  // To add a new module: add one entry here + create its file. Nothing else changes.
-  var MODULES = [
-    { id:"today",      href:"wb-today-mark2.html",      icon:"\uD83D\uDCC5", title:"Today",      desc:"Which homes signed off today and which are still pending." },
-    { id:"insights",   href:"wb-insights-mark2.html",   icon:"\uD83D\uDCCA", title:"Insights",   desc:"Compliance trends by home and by cycle." },
-    { id:"documents",  href:"wb-documents-mark2.html",  icon:"\uD83D\uDCC4", title:"Documents",  desc:"Grab or print the latest signed checklist for any home." },
-    { id:"checklists", href:"wb-checklists-mark2.html", icon:"\uD83D\uDCCB", title:"Checklists", desc:"Open and manage the checklists behind every residence." },
-    { id:"inbox",      href:"wb-inbox-mark2.html",      icon:"\uD83D\uDCE5", title:"Inbox",      desc:"Newly signed documents land here — mark each Handled once filed." }
-  ];
-  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
-  var wrap = document.getElementById("cubes");
-  wrap.innerHTML = MODULES.map(function(m){
-    return '<a class="cube" href="'+m.href+'">'
-      + '<span class="cube-icon">'+m.icon+'</span>'
-      + '<div class="cube-title">'+esc(m.title)+'</div>'
-      + '<div class="cube-desc">'+esc(m.desc)+'</div></a>';
-  }).join("");
+/* ============ DATA LAYER — real Supabase reads (writes OFF) ============ */
+const sb = window.__hascClient;
+const NY = "America/New_York";
+function nyParts(){
+  const f = new Intl.DateTimeFormat('en-US',{ timeZone:NY, year:'numeric',month:'2-digit',day:'2-digit',hour:'numeric',minute:'2-digit',hour12:true,weekday:'short'});
+  const p={}; f.formatToParts(new Date()).forEach(x=>p[x.type]=x.value); return p;
+}
+function nyDateKey(){ const p=nyParts(); return p.year+"-"+p.month+"-"+p.day; }
+function nyDateLabel(){ const p=nyParts(); return p.weekday+", "+p.month+"/"+p.day+"/"+p.year+" \u00B7 "+p.hour+":"+p.minute+" "+p.dayPeriod+" ET"; }
+function nyDateKeyOf(iso){ try{ const f=new Intl.DateTimeFormat('en-US',{timeZone:NY,year:'numeric',month:'2-digit',day:'2-digit'}); const p={}; f.formatToParts(new Date(iso)).forEach(x=>p[x.type]=x.value); return p.year+"-"+p.month+"-"+p.day; }catch(e){ return ""; } }
+function fmtDate(iso){ try{ return new Intl.DateTimeFormat('en-US',{timeZone:NY,month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date(iso)); }catch(e){ return iso; } }
 
-  (async function(){
-    try{
-      var client = window.__hascClient;
-      if(!client) return;
-      var u = await client.auth.getUser();
-      var email = u && u.data && u.data.user ? u.data.user.email : null;
-      if(!email) return;
-      var r = await client.from("profiles").select("full_name").eq("email", email).maybeSingle();
-      var name = r && r.data && r.data.full_name ? r.data.full_name : email;
-      document.getElementById("welcome").textContent = "Welcome back, " + name.split(" ")[0];
-      document.getElementById("userName").textContent = name;
-      document.getElementById("badge").textContent = name.split(" ").map(function(p){return p[0];}).join("").slice(0,2).toUpperCase();
-    }catch(e){ console.warn("[HASC hub] user load:", e); }
-  })();
+// caches
+let CACHE = { homes:null, tasks:null, subs:null, profiles:null, nameByEmail:null };
+async function loadCore(){
+  if(CACHE.homes) return CACHE;
+  const [homes,tasks,profiles] = await Promise.all([
+    sb.from('cl_homes').select('home_name,site,rm_email,ac_email'),
+    sb.from('cl_tasks').select('home_name,task_name,frequency'),
+    sb.from('profiles').select('email,full_name,role')
+  ]);
+  CACHE.homes = homes.data||[];
+  CACHE.tasks = tasks.data||[];
+  CACHE.profiles = profiles.data||[];
+  CACHE.nameByEmail = {}; CACHE.profiles.forEach(p=>{ CACHE.nameByEmail[(p.email||'').toLowerCase()] = p.full_name || p.email; });
+  return CACHE;
+}
+function nm(email){ if(!email) return "\u2014"; return CACHE.nameByEmail[email.toLowerCase()] || email; }
+async function loadSubs(){
+  if(CACHE.subs) return CACHE.subs;
+  const r = await sb.from('cl_submissions').select('home_name,submitted_by,submitted_at,frequency,tasks_done,tasks_total,comments').order('submitted_at',{ascending:false}).limit(500);
+  CACHE.subs = r.data||[]; return CACHE.subs;
+}
+
+const API = {
+  async getCoordinators(){
+    await loadCore(); const subs = await loadSubs();
+    const cutoff = Date.now() - 7*24*3600*1000;
+    // per-home recent compliance (keyed on residence, never manager)
+    const homeStats = {};
+    CACHE.homes.forEach(h=>{ homeStats[h.home_name] = { done:0, total:0, n:0 }; });
+    subs.forEach(s=>{
+      if(new Date(s.submitted_at).getTime() < cutoff) return;
+      const st = homeStats[s.home_name]; if(!st) return;
+      st.done += (s.tasks_done||0); st.total += (s.tasks_total||0); st.n++;
+    });
+    function homePct(h){ const st=homeStats[h]; if(!st||st.total===0) return 0; return Math.round(100*st.done/st.total); }
+    // group homes by AC (residence-keyed)
+    const byAc = {};
+    CACHE.homes.forEach(h=>{ (byAc[h.ac_email]=byAc[h.ac_email]||[]).push(h); });
+    const coords = Object.keys(byAc).map(ac=>{
+      const residences = byAc[ac].map(h=>({ name:h.home_name, staff:nm(h.rm_email), pct:homePct(h.home_name) }));
+      const pcts = residences.map(r=>r.pct);
+      const avg = pcts.length ? Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length) : 0;
+      const behind = residences.filter(r=>r.pct<50).length;
+      return { name:nm(ac), pct:avg, behind, total:residences.length, residences:residences.sort((a,b)=>a.pct-b.pct) };
+    });
+    return coords.sort((a,b)=>a.pct-b.pct);
+  },
+  async getChecklist(homeName){
+    await loadCore();
+    const rows = CACHE.tasks.filter(t=>t.home_name===homeName);
+    const live = rows.map(t=>({ text:t.task_name, freq:t.frequency, section:(t.frequency||'').toUpperCase() }));
+    return { live, removed:[] };
+  },
+  async getHomes(){ await loadCore(); return CACHE.homes.map(h=>({ name:h.home_name, staff:nm(h.rm_email) })); },
+  async getToday(){
+    await loadCore(); const subs = await loadSubs(); const key = nyDateKey();
+    const signedSet = {};
+    subs.forEach(s=>{ if(nyDateKeyOf(s.submitted_at)===key) signedSet[s.home_name] = signedSet[s.home_name] || fmtDate(s.submitted_at); });
+    const signed=[], pending=[];
+    CACHE.homes.forEach(h=>{ if(signedSet[h.home_name]) signed.push({name:h.home_name,at:signedSet[h.home_name]}); else pending.push({name:h.home_name}); });
+    return { signed, pending, total:CACHE.homes.length };
+  },
+  async getInbox(){
+    await loadCore(); const subs = await loadSubs();
+    return subs.filter(s=>s.comments && String(s.comments).trim().length>0)
+      .map(s=>({ residence:s.home_name, by:nm(s.submitted_by), note:String(s.comments).trim(), date:fmtDate(s.submitted_at), type:s.frequency||'Checklist' }));
+  },
+  async getDocuments(){ return []; } // cl_documents empty — clean empty state
+};
+
+/* ============ UI ============ */
+const areas = [
+  { id:"today", icon:"\uD83D\uDCC5", title:"Today", desc:"Which homes signed off today and which are still pending." },
+  { id:"insights", icon:"\uD83D\uDCCA", title:"Insights", desc:"Compliance by area coordinator over the last 7 days." },
+  { id:"documents", icon:"\uD83D\uDCC4", title:"Documents", desc:"Signed checklist files for any home." },
+  { id:"checklists", icon:"\uD83D\uDCCB", title:"Checklists", desc:"The tasks defined for every residence." },
+  { id:"inbox", icon:"\uD83D\uDCE5", title:"Inbox", desc:"Recent notes left on checklist submissions." }
+];
+const state = { tab:"home", coord:null, res:null, clHome:null };
+let history = [];
+const view = document.getElementById("view");
+const pageLabel = document.getElementById("pageLabel");
+const backBtn = document.getElementById("backBtn");
+const homeBtn = document.getElementById("homeBtn");
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function pctColor(p){ return p>=70?"#1a9d5a":(p>=40?"#c77d16":"#d64545"); }
+function dotColor(p){ return p>=50?"#1a9d5a":"#d64545"; }
+function goTo(tab){ history.push({tab:state.tab,coord:state.coord,res:state.res,clHome:state.clHome}); state.tab=tab; state.coord=null; state.res=null; render(); }
+
+function renderHome(){
+  let h='<h1 class="screen-title">Welcome back'+(window.__ME?', '+esc(window.__ME.split(' ')[0]):'')+'</h1>';
+  h+='<p class="screen-sub">Choose where you want to go.</p><div class="cubes">';
+  areas.forEach(a=>{ h+='<div class="cube" data-tile="'+a.id+'"><div class="cube-icon">'+a.icon+'</div><div class="cube-title">'+esc(a.title)+'</div><div class="cube-desc">'+esc(a.desc)+'</div></div>'; });
+  return h+'</div>';
+}
+async function renderInsights(){
+  const coords = await API.getCoordinators();
+  let h='<h1 class="screen-title">Insights</h1><p class="screen-sub">Compliance by area coordinator \u2014 last 7 days</p>';
+  coords.forEach((c,i)=>{
+    const attention=c.pct<30, open=state.coord===c.name;
+    h+='<div class="coord'+(attention?' attention':'')+(open?' open':'')+'"><div class="coord-head" data-act="coord" data-id="'+esc(c.name)+'"><div class="rank">#'+(i+1)+'</div><div class="coord-main"><div class="coord-name">'+esc(c.name)+(attention?'<span class="attn">\u26A0 NEEDS ATTENTION</span>':'')+'</div><div class="coord-sub">'+c.behind+' of '+c.total+' residences behind</div></div><div class="coord-pct" style="color:'+pctColor(c.pct)+'">'+c.pct+'%</div><span class="mini-caret">\u25B8</span></div>';
+    if(open){ c.residences.forEach(r=>{ h+='<div class="res"><span class="dot" style="background:'+dotColor(r.pct)+'"></span><span class="res-name">'+esc(r.name)+'</span><span class="res-staff">'+esc(r.staff)+'</span><span class="res-pct" style="color:'+pctColor(r.pct)+'">'+r.pct+'%</span></div>'; }); }
+    h+='</div>';
+  });
+  return h;
+}
+async function renderChecklists(){
+  const homes = await API.getHomes();
+  if(!state.clHome && homes.length) state.clHome = homes[0].name;
+  const cl = await API.getChecklist(state.clHome);
+  const homeSel = homes.map(x=>'<option'+(state.clHome===x.name?" selected":"")+'>'+esc(x.name)+'</option>').join("");
+  let h='<h1 class="screen-title">Checklists</h1><p class="screen-sub">Tasks defined per home, by frequency</p>';
+  h+='<div class="cl-controls"><div><label class="fl">Home</label><select class="inp" data-cl-home>'+homeSel+'</select></div></div>';
+  const groups={}; cl.live.forEach(t=>{ (groups[t.freq]=groups[t.freq]||[]).push(t); });
+  h+='<div class="panel"><div class="panel-head"><span>'+esc(state.clHome)+'</span><span class="count">'+cl.live.length+' tasks</span></div><div class="panel-body">';
+  if(!cl.live.length) h+='<div class="empty">No tasks for this home.</div>';
+  ['Daily','Weekly','Monthly','Quarterly','Annual','Annually'].forEach(fr=>{ if(groups[fr]){ h+='<div class="grp">'+esc(fr)+'</div>'; groups[fr].forEach(t=>{ h+='<div class="task"><span class="mk">\u2713</span><span class="task-text">'+esc(t.text)+'</span></div>'; }); } });
+  return h+'</div></div>';
+}
+async function renderToday(){
+  const t = await API.getToday();
+  let h='<div class="callout"><b>Today</b> \u2014 which homes signed off today and which are still pending.</div>';
+  h+='<div class="doc-label">'+esc(nyDateLabel())+'</div>';
+  h+='<div class="sumbar"><div class="stat"><div class="n" style="color:#1a9d5a">'+t.signed.length+'</div><div class="l">Signed off today</div></div><div class="stat"><div class="n" style="color:#d64545">'+t.pending.length+'</div><div class="l">Still pending</div></div><div class="stat"><div class="n" style="color:#17a2b8">'+t.total+'</div><div class="l">Total homes</div></div></div>';
+  if(t.pending.length){ h+='<div class="sec-head"><span>Still pending</span></div><div class="list">'; t.pending.forEach(p=>{ h+='<div class="today-row"><span class="dot" style="background:#d64545"></span><span>'+esc(p.name)+'</span><span class="t-status" style="color:#d64545">Pending</span></div>'; }); h+='</div>'; }
+  if(t.signed.length){ h+='<div class="sec-head"><span>Signed off</span></div><div class="list">'; t.signed.forEach(s=>{ h+='<div class="today-row"><span class="dot" style="background:#1a9d5a"></span><span>'+esc(s.name)+'</span><span class="t-status" style="color:#1a9d5a">'+esc(s.at)+'</span></div>'; }); h+='</div>'; }
+  return h;
+}
+async function renderInbox(){
+  const items = await API.getInbox();
+  let h='<h1 class="screen-title">Inbox</h1><p class="screen-sub">Recent notes left on checklist submissions</p>';
+  if(!items.length) h+='<div class="empty">No notes yet.</div>';
+  items.forEach(it=>{ h+='<div class="inbox-item"><div class="inbox-top"><span class="inbox-res">'+esc(it.residence)+'</span><span class="inbox-date">'+esc(it.date)+'</span></div><div class="inbox-body">'+esc(it.note)+'</div><div class="inbox-by">\u2014 '+esc(it.by)+'</div></div>'; });
+  return h;
+}
+async function renderDocuments(){
+  const docs = await API.getDocuments();
+  let h='<h1 class="screen-title">Documents</h1><p class="screen-sub">Signed checklist files by home</p>';
+  if(!docs.length) h+='<div class="empty">No signed documents have been filed yet.</div>';
+  return h;
+}
+async function render(){
+  const area=areas.find(a=>a.id===state.tab);
+  pageLabel.textContent = area?area.title:"RM Compliance";
+  backBtn.disabled = history.length===0; homeBtn.disabled = state.tab==="home";
+  view.innerHTML='<div class="loading">Loading\u2026</div>';
+  try {
+    let html="";
+    if(state.tab==="home") html=renderHome();
+    else if(state.tab==="today") html=await renderToday();
+    else if(state.tab==="insights") html=await renderInsights();
+    else if(state.tab==="documents") html=await renderDocuments();
+    else if(state.tab==="checklists") html=await renderChecklists();
+    else if(state.tab==="inbox") html=await renderInbox();
+    view.innerHTML=html;
+  } catch(e){ view.innerHTML='<div class="empty">Could not load this screen: '+esc(e.message)+'</div>'; }
+}
+backBtn.addEventListener("click",function(){ if(history.length){ const s=history.pop(); state.tab=s.tab; state.coord=s.coord; state.res=s.res; state.clHome=s.clHome; render(); } });
+homeBtn.addEventListener("click",function(){ if(state.tab!=="home"){ history.push({tab:state.tab,coord:state.coord,res:state.res,clHome:state.clHome}); state.tab="home"; render(); } });
+document.addEventListener("click",function(e){
+  const tile=e.target.closest("[data-tile]"); if(tile){ goTo(tile.dataset.tile); return; }
+  const coord=e.target.closest('[data-act="coord"]'); if(coord){ const id=coord.dataset.id; state.coord=(state.coord===id)?null:id; render(); return; }
+});
+document.addEventListener("change",function(e){ const home=e.target.closest("[data-cl-home]"); if(home){ state.clHome=home.value; render(); } });
+
+/* ============ identity + boot ============ */
+async function boot(){
+  try {
+    const { data:{ session } } = await sb.auth.getSession();
+    if(session){
+      const uid=session.user.id;
+      const { data:me } = await sb.from('profiles').select('full_name,email').eq('id',uid).single();
+      window.__ME = (me && (me.full_name||me.email)) || session.user.email || "";
+      document.getElementById('userName').textContent = window.__ME || "Admin";
+      const initials = (window.__ME||"?").split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase();
+      document.getElementById('badge').textContent = initials || "AD";
+    }
+  } catch(e){}
+  await loadCore();
+  render();
+}
+boot();
 </script>
 </body>
 </html>
