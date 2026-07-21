@@ -299,12 +299,17 @@ function renderInbox(){
 // ---------- Checklists: two-panel builder on cl_library ----------
 function freqLabel(fk){ for(const k in FREQ_KEYS){ if(FREQ_KEYS[k]===fk) return k; } return (fk||"").charAt(0).toUpperCase()+(fk||"").slice(1); }
 function ensureCLLoaded(){
-  // Left panel = full library (the master task set). Right panel = removed (per-session).
-  if(!state.__clInit){
-    state.live = LIBRARY.map(t=>({ id:t.id, freq:freqLabel(t.frequency), section:(t.section||"GENERAL").toUpperCase(), text:t.task_name, _new:false }));
-    state.removed = [];
-    state.__clInit = true;
-  }
+  // Left = active for the selected home; Right = removed (from cl_home_off for that home).
+  const off = state.offSet || new Set();
+  const all = LIBRARY.map(t=>({ id:t.id, freq:freqLabel(t.frequency), section:(t.section||"GENERAL").toUpperCase(), text:t.task_name, _new:false }));
+  state.live = all.filter(t=> !off.has(String(t.id)));
+  state.removed = all.filter(t=> off.has(String(t.id)));
+  state.__clInit = true;
+}
+async function loadHomeOff(){
+  state.offSet = new Set();
+  if(!state.clHome) return;
+  try{ const { data } = await supabase.from('cl_home_off').select('task_id').eq('home_name', state.clHome); (data||[]).forEach(r=> state.offSet.add(String(r.task_id))); }catch(e){}
 }
 function groupTasks(tasks){ const order=[], b={}; tasks.forEach(t=>{ if(state.clFilter!=="All frequencies" && t.freq!==state.clFilter) return; const key=t.freq.toUpperCase()+" \u00B7 "+t.section; if(!b[key]){ b[key]=[]; order.push(key); } b[key].push(t); }); return { order, buckets:b }; }
 function panelHTML(title, tasks, side){
@@ -318,7 +323,8 @@ function renderChecklists(){
   ensureCLLoaded();
   let h='<div class="callout"><b>Checklists</b> \u2014 the master task library. Left is active; right is removed. Hover a task to change frequency or delete. Deletes save to Supabase (cl_library); moves are per-home layout.</div>';
   const freqSel=["All frequencies"].concat(FREQS).map(f=>'<option'+(state.clFilter===f?" selected":"")+'>'+f+'</option>').join("");
-  h+='<div class="cl-controls"><div><label class="fl">Show tasks</label><select class="inp" data-cl-filter>'+freqSel+'</select></div></div>';
+  const homeSel = '<option value="">Select a residence\u2026</option>'+HOMES.map(hh=>'<option value="'+esc(hh.home_name)+'"'+(state.clHome===hh.home_name?' selected':'')+'>'+esc(hh.home_name)+'</option>').join('');
+  h+='<div class="cl-controls"><div><label class="fl">Residence</label><select class="inp" data-cl-home>'+homeSel+'</select></div><div><label class="fl">Show tasks</label><select class="inp" data-cl-filter>'+freqSel+'</select></div></div>';
   h+='<div class="addcard"><h4>+ Add a new task</h4><div class="add-row"><input class="inp" data-cl-name placeholder="Task name"><select class="inp" data-cl-freq>'+FREQS.map(f=>'<option>'+f+'</option>').join("")+'</select><input class="inp" data-cl-section placeholder="Section (optional)"><button class="btn-teal" data-cl-add>Add task</button></div></div>';
   h+='<div class="cl-grid">'+panelHTML("Active tasks", state.live, "live")+'<div class="midbtns"><button class="btn-mid" data-cl-move="add">\u00AB Add</button><button class="btn-mid" data-cl-move="remove">Remove \u00BB</button><button class="btn-mid" data-cl-move="addall">Add all</button><button class="btn-mid" data-cl-move="removeall">Remove all</button></div>'+panelHTML("Removed", state.removed, "removed")+'</div>';
   return h;
@@ -349,11 +355,19 @@ document.addEventListener("click", async function(e){
   const task=e.target.closest("[data-cl-task]"); if(task){ const id=task.dataset.clTask; if(state.sel.has(id)) state.sel.delete(id); else state.sel.add(id); render(); return; }
   const add=e.target.closest("[data-cl-add]"); if(add){ const name=(view.querySelector("[data-cl-name]").value||"").trim(); if(name){ const freq=view.querySelector("[data-cl-freq]").value; const section=(view.querySelector("[data-cl-section]").value||"GENERAL").toUpperCase(); const maxSort=LIBRARY.reduce((m,t)=>Math.max(m,t.sort_order||0),0)+1; const { data }=await SB.from("cl_library").insert({ frequency:FREQ_KEYS[freq], section:section, task_name:name, sort_order:maxSort }).select().single(); if(data){ LIBRARY.push(data); state.live.push({ id:data.id, freq:freq, section:section, text:name }); } render(); } return; }
   const mv=e.target.closest("[data-cl-move]"); if(mv){ const m=mv.dataset.clMove;
-    if(m==="addall"){ state.live=state.live.concat(state.removed); state.removed=[]; }
-    else if(m==="removeall"){ state.removed=state.removed.concat(state.live); state.live=[]; }
-    else if(m==="add"){ const mo=state.removed.filter(t=>state.sel.has(t.id)); state.removed=state.removed.filter(t=>!state.sel.has(t.id)); state.live=state.live.concat(mo); }
-    else if(m==="remove"){ const mo=state.live.filter(t=>state.sel.has(t.id)); state.live=state.live.filter(t=>!state.sel.has(t.id)); state.removed=state.removed.concat(mo); }
-    state.sel.clear(); render(); return; }
+    if(!state.clHome){ alert('Pick a residence first.'); return; }
+    let toRemove=[], toAdd=[];
+    if(m==="addall"){ toAdd = state.removed.map(t=>t.id); }
+    else if(m==="removeall"){ toRemove = state.live.map(t=>t.id); }
+    else if(m==="add"){ toAdd = state.removed.filter(t=>state.sel.has(t.id)).map(t=>t.id); }
+    else if(m==="remove"){ toRemove = state.live.filter(t=>state.sel.has(t.id)).map(t=>t.id); }
+    (async()=>{
+      try{
+        if(toRemove.length){ await supabase.from('cl_home_off').insert(toRemove.map(id=>({ home_name: state.clHome, task_id: id }))); }
+        if(toAdd.length){ await supabase.from('cl_home_off').delete().eq('home_name', state.clHome).in('task_id', toAdd); }
+      }catch(err){ alert('Save failed: '+(err.message||err)); }
+      state.sel.clear(); await loadHomeOff(); render();
+    })(); return; }return; }
 });
 document.addEventListener("input", function(e){
   const s=e.target.closest("[data-doc-search]"); if(s){ state.docSearch=s.value; render(); const el=view.querySelector("[data-doc-search]"); if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length); } return; }
@@ -361,6 +375,7 @@ document.addEventListener("input", function(e){
 });
 document.addEventListener("change", async function(e){
   const fm=e.target.closest("[data-cl-freqmove]"); if(fm){ const id=fm.dataset.clFreqmove; const t=state.live.concat(state.removed).find(x=>x.id===id); if(t){ t.freq=fm.value; await SB.from("cl_library").update({ frequency:FREQ_KEYS[fm.value] }).eq("id",id); } render(); return; }
+  const hsel=e.target.closest("[data-cl-home]"); if(hsel){ state.clHome=hsel.value; state.sel.clear(); (async()=>{ await loadHomeOff(); render(); })(); return; }
   const filt=e.target.closest("[data-cl-filter]"); if(filt){ state.clFilter=filt.value; render(); return; }
   const sort=e.target.closest("[data-doc-sort]"); if(sort){ state.docSort=sort.value; render(); return; }
 });
