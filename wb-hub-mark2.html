@@ -51,11 +51,11 @@
   // Hub = launcher. Each tile links to a standalone spoke module.
   // To add a new module: add one entry here + create its file. Nothing else changes.
   var MODULES = [
-    { id:"today",      href:"m2-today.html",      icon:"\uD83D\uDCC5", title:"Today",      desc:"Which homes signed off today and which are still pending." },
-    { id:"insights",   href:"m2-insights.html",   icon:"\uD83D\uDCCA", title:"Insights",   desc:"Compliance trends by home and by cycle." },
-    { id:"documents",  href:"m2-documents.html",  icon:"\uD83D\uDCC4", title:"Documents",  desc:"Grab or print the latest signed checklist for any home." },
-    { id:"checklists", href:"m2-checklists.html", icon:"\uD83D\uDCCB", title:"Checklists", desc:"Open and manage the checklists behind every residence." },
-    { id:"inbox",      href:"m2-inbox.html",      icon:"\uD83D\uDCE5", title:"Inbox",      desc:"Newly signed documents land here \u2014 mark each Handled once filed." }
+    { id:"today",      href:"wb-today-mark2.html",      icon:"\uD83D\uDCC5", title:"Today",      desc:"Which homes signed off today and which are still pending." },
+    { id:"insights",   href:"wb-insights-mark2.html",   icon:"\uD83D\uDCCA", title:"Insights",   desc:"Compliance trends by home and by cycle." },
+    { id:"documents",  href:"wb-documents-mark2.html",  icon:"\uD83D\uDCC4", title:"Documents",  desc:"Grab or print the latest signed checklist for any home." },
+    { id:"checklists", href:"wb-checklists-mark2.html", icon:"\uD83D\uDCCB", title:"Checklists", desc:"Open and manage the checklists behind every residence." },
+    { id:"inbox",      href:"wb-inbox-mark2.html",      icon:"\uD83D\uDCE5", title:"Inbox",      desc:"Newly signed documents land here \u2014 mark each Handled once filed." }
   ];
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
   var wrap = document.getElementById("cubes");
