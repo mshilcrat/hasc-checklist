@@ -205,20 +205,69 @@ function renderInsights(){
     h+='</div>'; });
   return h;
 }
-async function loadDocs(homeName){ if(state.docFiles[homeName]) return state.docFiles[homeName]; const { data }=await SB.from("cl_documents").select("id,doc_type,name,date,url,version").eq("home_name",homeName).order("date",{ascending:false}); state.docFiles[homeName]=data||[]; return state.docFiles[homeName]; }
+let DOCS=[];
+async function loadDocsAll(){
+  if(DOCS.length) return DOCS;
+  const { data } = await SB.from("cl_submissions").select("*").order("submitted_at",{ascending:false});
+  DOCS = data||[];
+  return DOCS;
+}
+function docFileName(s){
+  const dt=s.submitted_at?new Date(s.submitted_at):new Date();
+  const m=('0'+(dt.getMonth()+1)).slice(-2), d=('0'+dt.getDate()).slice(-2), y=dt.getFullYear();
+  const fl=(s.frequency||'Checklist'); const F=fl.charAt(0).toUpperCase()+fl.slice(1);
+  return s.home_name+' \u2013 '+F+' Checklist \u2013 '+m+'-'+d+'-'+y+' ('+(s.tasks_done||0)+'/'+(s.tasks_total||0)+')';
+}
+function buildDocHtml(rec){
+  const e=function(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+  let tj=rec.tasks_json||{}; if(typeof tj==='string'){ try{ tj=JSON.parse(tj); }catch(x){ tj={}; } }
+  const items=(tj&&tj.items)?tj.items:[];
+  const doneCount=items.filter(function(x){return x.done;}).length, total=items.length;
+  const dt=rec.submitted_at?new Date(rec.submitted_at):new Date();
+  const dateStr=dt.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  const timeStr=dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  const freqRaw=(tj.frequency||rec.frequency||'Daily'); const freq=freqRaw.charAt(0).toUpperCase()+freqRaw.slice(1);
+  const signer=rec.signature||rec.submitted_by||''; const home=rec.home_name||'';
+  const NAVY='#0c2e34',CY='#3EC5D3',GRN='#1E8E6A',GRAY='#5a6b70',TEAL='#0E7C89';
+  function row(it){
+    const box=it.done?'<span style="display:inline-block;width:16px;height:16px;border-radius:4px;background:'+CY+';position:relative;flex:0 0 auto;"><span style="position:absolute;left:3.5px;top:0;color:#fff;font:bold 13px Arial;">\u2713</span></span>':'<span style="display:inline-block;width:16px;height:16px;border-radius:4px;border:1.5px solid #c4d0d3;flex:0 0 auto;"></span>';
+    const col=it.done?NAVY:'#9aa7ab';
+    const status=it.done?'<span style="color:'+GRN+';font:600 11px Arial;">Done</span>':'<span style="color:#b3bcc0;font:600 11px Arial;">Pending</span>';
+    return '<div style="display:flex;align-items:center;gap:11px;padding:7px 2px;border-bottom:1px solid #f1f5f6;">'+box+'<span style="flex:1;font:14px/1.3 Arial;color:'+col+';">'+e(it.name)+'</span>'+status+'</div>';
+  }
+  const mid=Math.ceil(items.length/2);
+  const colL=items.slice(0,mid).map(row).join(''); const colR=items.slice(mid).map(row).join('');
+  const html='<div style="box-sizing:border-box;width:8.5in;min-height:11in;margin:0 auto;background:#fff;display:flex;flex-direction:column;font-family:Arial,sans-serif;">'
+    +'<div style="background:linear-gradient(135deg,#0c2e34,#0E7C89);padding:26px 46px;display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:18px;"><div style="border-left:2px solid rgba(255,255,255,.3);padding-left:18px;"><div style="font:700 24px Arial;color:#fff;">HASC Center</div><div style="font:600 10px Arial;letter-spacing:2.5px;color:'+CY+';text-transform:uppercase;">Residential Management</div></div></div><div style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;font:700 10px Arial;letter-spacing:1.5px;padding:8px 16px;border-radius:20px;">COMPLIANCE RECORD</div></div>'
+    +'<div style="padding:22px 46px 16px;border-bottom:1px solid #e3eaec;display:flex;align-items:flex-end;justify-content:space-between;"><div><div style="font:700 11px Arial;letter-spacing:2.5px;color:'+CY+';text-transform:uppercase;">Signed '+freq+' Compliance Checklist</div><div style="font:700 30px Arial;color:'+NAVY+';margin-top:4px;">'+e(home)+'</div></div><div style="text-align:right;font:12px Arial;color:'+GRAY+';line-height:1.7;"><div style="font:700 22px Arial;color:'+NAVY+';">'+doneCount+' / '+total+'</div><div>items completed</div><div style="margin-top:6px;">'+dateStr+'</div><div>'+timeStr+' \u00B7 '+freq+'</div></div></div>'
+    +'<div style="flex:1;padding:22px 46px;display:grid;grid-template-columns:1fr 1fr;gap:30px;align-content:start;"><div>'+colL+'</div><div>'+colR+'</div></div>'
+    +'<div style="padding:18px 46px;border-top:1px solid #e3eaec;display:flex;align-items:flex-end;justify-content:space-between;"><div><div style="font:italic 28px Georgia,serif;color:'+CY+';line-height:1;">'+e(signer)+'</div><div style="font:700 10px Arial;letter-spacing:1.5px;color:'+GRAY+';margin-top:4px;text-transform:uppercase;">Signature \u00B7 Residence Manager</div></div><div style="text-align:right;font:11px Arial;color:'+GRAY+';">Signed '+dateStr+'<br>'+timeStr+'</div></div>'
+    +'</div>';
+  return html;
+}
+function openDoc(recId, doPrint){
+  const rec=DOCS.find(function(r){ return r.id===recId; }); if(!rec) return;
+  const body=buildDocHtml(rec);
+  const onload=doPrint?' onload="setTimeout(function(){window.print();},300)"':'';
+  const full='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(rec.home_name||'Checklist')+'</title></head><body'+onload+'>'+body+'</body></html>';
+  const url=URL.createObjectURL(new Blob([full],{type:'text/html'}));
+  const w=window.open(url,'_blank'); if(!w) location.href=url;
+}
 function renderDocuments(){
-  let h='<div class="callout"><b>Documents</b> \u2014 signed files for each home, from live data.</div>';
-  h+='<div class="doc-bar"><div class="search"><span>\u2315</span><input type="text" data-doc-search placeholder="Search a home\u2026" value="'+esc(state.docSearch)+'"></div><select class="inp" data-doc-sort><option value="recent"'+(state.docSort==="recent"?" selected":"")+'>Most recent</option><option value="az"'+(state.docSort==="az"?" selected":"")+'>A \u2013 Z</option></select></div>';
-  let homes=HOMES.slice(); if(state.docSort==="az") homes.sort((a,b)=>a.home_name.localeCompare(b.home_name));
-  const q=state.docSearch.trim().toLowerCase(); if(q) homes=homes.filter(x=>x.home_name.toLowerCase().indexOf(q)>-1);
+  let h='<div class="callout"><b>Documents</b> \u2014 every signed checklist, filed by home. Click a file to view or print the full signed record.</div>';
+  h+='<div class="doc-bar"><div class="search"><span>\u2315</span><input type="text" data-doc-search placeholder="Search a home\u2026" value="'+esc(state.docSearch)+'"></div></div>';
+  const q=state.docSearch.trim().toLowerCase();
+  const byHome={}; DOCS.forEach(function(s){ (byHome[s.home_name]=byHome[s.home_name]||[]).push(s); });
+  let homes=Object.keys(byHome).sort(); if(q) homes=homes.filter(function(hn){ return hn.toLowerCase().indexOf(q)>-1; });
   h+='<div id="docList">';
-  homes.forEach(home=>{ const open=state.docOpen.has(home.home_name); const files=state.docFiles[home.home_name]||null;
-    h+='<div class="folder'+(open?' open':'')+'"><div class="folder-head" data-doc-folder="'+esc(home.home_name)+'"><span>\uD83D\uDCC1</span><span class="folder-name">'+esc(home.home_name)+'</span><span class="folder-count">'+(files?(files.length?files.length+' file'+(files.length>1?'s':''):'no files'):'')+'</span><span class="folder-caret">\u25BE</span></div>';
-    if(open){ if(!files) h+='<div class="file-row file-none"><span class="file-name">Loading\u2026</span></div>'; else if(!files.length) h+='<div class="file-row file-none"><span class="file-name">No signed file yet</span></div>'; else files.forEach(f=>{ h+='<div class="file-row"><span>\uD83D\uDCC4</span><span class="file-name">'+esc(f.name||f.doc_type||"Document")+(f.date?' \u2013 '+esc(f.date):'')+'</span><span class="file-acts">'+(f.url?'<a class="btn-view" href="'+esc(f.url)+'" target="_blank">View</a>':'<button class="btn-view" disabled>View</button>')+'</span></div>'; }); }
+  if(!homes.length) h+='<div class="empty">No signed checklists found yet.</div>';
+  homes.forEach(function(hn){ const files=byHome[hn]; const open=state.docOpen.has(hn);
+    h+='<div class="folder'+(open?' open':'')+'"><div class="folder-head" data-doc-folder="'+esc(hn)+'"><span>\uD83D\uDCC1</span><span class="folder-name">'+esc(hn)+'</span><span class="folder-count">'+files.length+' file'+(files.length>1?'s':'')+'</span><span class="folder-caret">\u25BE</span></div>';
+    if(open){ files.forEach(function(s){ h+='<div class="file-row"><span>\uD83D\uDCC4</span><span class="file-name">'+esc(docFileName(s))+'</span><span class="file-acts"><button class="btn-view" data-doc-view="'+esc(s.id)+'">View</button><button class="btn-plain" data-doc-print="'+esc(s.id)+'">Print</button></span></div>'; }); }
     h+='</div>'; });
-  if(!homes.length) h+='<div class="empty">Nothing matches that search.</div>';
   return h+'</div>';
 }
+
 function renderToday(){
   reminderCheck();
   const signed=HOMES.filter(h=>h.pct>=70), pending=HOMES.filter(h=>h.pct<70);
@@ -293,7 +342,9 @@ document.addEventListener("click", async function(e){
   const itab=e.target.closest("[data-in-tab]"); if(itab){ state.inTab=itab.dataset.inTab; render(); return; }
   const rm=e.target.closest("[data-remind]"); if(rm){ reminderMark(rm.dataset.remind); render(); return; }
   const rall=e.target.closest("[data-remind-all]"); if(rall){ HOMES.filter(x=>x.pct<70).forEach(x=>reminderMark(x.home_name)); render(); return; }
-  const fold=e.target.closest("[data-doc-folder]"); if(fold){ const n=fold.dataset.docFolder; if(state.docOpen.has(n)) state.docOpen.delete(n); else { state.docOpen.add(n); await loadDocs(n); } render(); return; }
+  const fold=e.target.closest("[data-doc-folder]"); if(fold){ const n=fold.dataset.docFolder; if(state.docOpen.has(n)) state.docOpen.delete(n); else { state.docOpen.add(n); } render(); return; }
+  const dvw=e.target.closest("[data-doc-view]"); if(dvw){ openDoc(dvw.dataset.docView, false); return; }
+  const dpr=e.target.closest("[data-doc-print]"); if(dpr){ openDoc(dpr.dataset.docPrint, true); return; }
   const del=e.target.closest("[data-cl-del]"); if(del){ const id=del.dataset.clDel; if(confirm("Permanently delete this task from the library?")){ await SB.from("cl_library").delete().eq("id",id); state.live=state.live.filter(t=>t.id!==id); state.removed=state.removed.filter(t=>t.id!==id); state.sel.delete(id); render(); } return; }
   const task=e.target.closest("[data-cl-task]"); if(task){ const id=task.dataset.clTask; if(state.sel.has(id)) state.sel.delete(id); else state.sel.add(id); render(); return; }
   const add=e.target.closest("[data-cl-add]"); if(add){ const name=(view.querySelector("[data-cl-name]").value||"").trim(); if(name){ const freq=view.querySelector("[data-cl-freq]").value; const section=(view.querySelector("[data-cl-section]").value||"GENERAL").toUpperCase(); const maxSort=LIBRARY.reduce((m,t)=>Math.max(m,t.sort_order||0),0)+1; const { data }=await SB.from("cl_library").insert({ frequency:FREQ_KEYS[freq], section:section, task_name:name, sort_order:maxSort }).select().single(); if(data){ LIBRARY.push(data); state.live.push({ id:data.id, freq:freq, section:section, text:name }); } render(); } return; }
@@ -313,7 +364,7 @@ document.addEventListener("change", async function(e){
   const filt=e.target.closest("[data-cl-filter]"); if(filt){ state.clFilter=filt.value; render(); return; }
   const sort=e.target.closest("[data-doc-sort]"); if(sort){ state.docSort=sort.value; render(); return; }
 });
-(async function boot(){ try { await loadAll(); render(); } catch(err){ view.innerHTML='<div class="loading">Could not load data: '+esc(err.message||err)+'</div>'; console.error(err); } })();
+(async function boot(){ try { await loadAll(); await loadDocsAll(); render(); } catch(err){ view.innerHTML='<div class="loading">Could not load data: '+esc(err.message||err)+'</div>'; console.error(err); } })();
 </script>
 </body>
 </html>
