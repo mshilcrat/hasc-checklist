@@ -4,310 +4,316 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HASC RM Compliance</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="wb-config.js"></script>
-<script src="wb-guard.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"><\/script>
+<script src="wb-config.js"><\/script>
+<script src="wb-guard.js"><\/script>
 <style>
-  * { box-sizing:border-box; }
-  body { margin:0; background:#eef2f5; color:#223038;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
-  .topbar { background:#fff; border-bottom:3px solid #17a2b8;
-    display:flex; align-items:center; gap:16px; padding:12px 24px; flex-wrap:wrap; }
-  .logo { display:flex; align-items:center; gap:9px; }
-  .logo-mark { height:34px; width:auto; display:block; font-weight:800; color:#17a2b8; letter-spacing:.5px; }
-  .page-label { color:#8a97a1; font-size:15px; padding-left:14px; border-left:1px solid #e2e8ec; }
-  .navbtns { display:flex; gap:9px; margin-left:4px; }
-  .navbtn { display:inline-flex; align-items:center; gap:6px; background:#fff; border:1px solid #dbe3e8;
-    border-radius:9px; padding:7px 14px; font-size:14px; font-weight:600; color:#3a4a54; cursor:pointer; }
-  .navbtn:hover { border-color:#17a2b8; color:#17a2b8; }
-  .navbtn[disabled] { opacity:.4; cursor:default; }
-  .navbtn[disabled]:hover { border-color:#dbe3e8; color:#3a4a54; }
-  .whoami { margin-left:auto; display:flex; align-items:center; gap:10px; }
-  .badge { width:36px; height:36px; border-radius:50%; background:#1a9d5a; color:#fff;
-    font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center; }
-  .user-name { font-size:14px; color:#445561; }
-  .container { max-width:1080px; margin:0 auto; padding:26px 24px 60px; }
-  .screen-title { font-size:25px; font-weight:700; margin:0 0 4px; }
-  .screen-sub { font-size:15px; color:#6a7b86; margin:0 0 24px; }
-  .cubes { display:grid; grid-template-columns:repeat(4,235px); gap:22px; justify-content:start; align-items:stretch; }
-  .cube { background:#fff; border:1px solid #edf1f4; border-radius:10px; box-shadow:0 1px 3px rgba(34,48,56,.06);
-    padding:22px 20px 26px; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
-  .cube:hover { transform:translateY(-2px); box-shadow:0 8px 18px rgba(34,48,56,.12); border-color:#dfe7ec; }
-  .cube-icon { font-size:26px; line-height:1; display:block; margin-bottom:22px; }
-  .cube-title { font-weight:700; font-size:15.5px; margin:0 0 8px; color:#1f2d36; }
-  .cube-desc { font-size:13.5px; color:#7a8894; line-height:1.55; }
-  .callout { background:#fff; border-left:4px solid #17a2b8; border-radius:10px; padding:15px 20px;
-    box-shadow:0 2px 8px rgba(34,48,56,.08); margin-bottom:22px; font-size:14px; color:#3a4a54; line-height:1.5; }
-  .callout b { color:#223038; }
-  .btn-teal { background:#17a2b8; color:#fff; border:none; border-radius:8px; padding:8px 16px; font-weight:600; font-size:13px; cursor:pointer; }
-  .btn-teal:hover { background:#1490a3; }
-  .btn-outline { background:#fff; color:#17a2b8; border:1px solid #cfe6ea; border-radius:8px; padding:8px 16px; font-weight:600; font-size:13px; cursor:pointer; }
-  .btn-outline:hover { border-color:#17a2b8; }
-  .coord { background:#fff; border-radius:14px; box-shadow:0 2px 8px rgba(34,48,56,.08); margin-bottom:14px; overflow:hidden; }
-  .coord-head { display:flex; align-items:center; gap:16px; padding:18px 22px; cursor:pointer; }
-  .coord.attention > .coord-head { background:#fdf2f2; }
-  .rank { font-size:22px; font-weight:800; color:#c3ccd2; width:40px; flex:0 0 40px; }
-  .coord-main { flex:1; }
-  .coord-name { font-weight:700; font-size:16px; }
-  .attn { color:#d64545; font-weight:700; font-size:12.5px; margin-left:8px; }
-  .coord-sub { color:#7a8894; font-size:13px; margin-top:3px; }
-  .coord-pct { font-weight:800; font-size:17px; }
-  .mini-caret { color:#b3c0c8; margin-left:14px; font-size:13px; transition:transform .15s ease; }
-  .coord.open > .coord-head .mini-caret, .res.open .mini-caret { transform:rotate(90deg); color:#17a2b8; }
-  .res { display:flex; align-items:center; gap:12px; padding:13px 22px; border-top:1px solid #f0f3f5; cursor:pointer; }
-  .res:hover { background:#f9fbfc; }
-  .dot { width:10px; height:10px; border-radius:50%; flex:0 0 10px; }
-  .res-name { font-weight:500; }
-  .res-staff { color:#95a3ad; font-size:13px; margin-left:auto; }
-  .res-pct { font-weight:700; font-size:14px; width:50px; text-align:right; }
-  .toolbar { display:flex; gap:12px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
-  .search { flex:1; min-width:220px; display:flex; align-items:center; gap:8px; background:#fff; border-radius:10px; padding:9px 14px; box-shadow:0 2px 8px rgba(34,48,56,.06); }
-  .search input { border:none; outline:none; flex:1; font-size:14px; background:transparent; color:#223038; }
-  .inp { padding:9px 12px; border:1px solid #d8e0e5; border-radius:8px; background:#fff; font-size:14px; color:#223038; }
-  .list { background:#fff; border-radius:14px; box-shadow:0 2px 8px rgba(34,48,56,.08); overflow:hidden; }
-  .empty { padding:26px 20px; color:#7a8894; font-size:14px; text-align:center; }
-  .doc-label { font-size:11.5px; font-weight:700; letter-spacing:.9px; color:#9aa7b0; margin:0 0 12px 2px; }
-  .folder { background:#fff; border:1px solid #edf1f4; border-radius:12px; box-shadow:0 1px 3px rgba(34,48,56,.06); margin-bottom:12px; overflow:hidden; }
-  .folder-head { display:flex; align-items:center; gap:11px; padding:15px 20px; cursor:pointer; }
-  .folder-head:hover { background:#fafcfd; }
-  .folder-name { font-size:15.5px; font-weight:500; }
-  .folder-count { margin-left:auto; color:#9aa7b0; font-size:13px; }
-  .sumbar { display:flex; gap:14px; margin-bottom:16px; flex-wrap:wrap; }
-  .stat { background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(34,48,56,.08); padding:16px 20px; flex:1; min-width:140px; }
-  .stat .n { font-size:26px; font-weight:800; }
-  .stat .l { font-size:13px; color:#7a8894; margin-top:2px; }
-  .today-row { display:flex; align-items:center; gap:12px; padding:13px 20px; border-bottom:1px solid #f0f3f5; }
-  .today-row:last-child { border-bottom:none; }
-  .t-status { margin-left:auto; font-size:13px; font-weight:600; }
-  .sec-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:22px 2px 10px; font-size:13px; font-weight:700; color:#5b6b78; }
-  .inbox-item { background:#fff; border-radius:12px; box-shadow:0 1px 3px rgba(34,48,56,.06); padding:15px 20px; margin-bottom:12px; }
-  .inbox-top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-  .inbox-res { color:#17a2b8; font-weight:700; font-size:14px; }
-  .inbox-date { color:#9aa7b0; font-size:12.5px; white-space:nowrap; }
-  .inbox-body { color:#33424c; font-size:14px; margin:8px 0 4px; }
-  .inbox-by { color:#95a3ad; font-size:12.5px; }
-  .cl-controls { display:flex; gap:22px; flex-wrap:wrap; margin-bottom:18px; }
-  .fl { display:block; font-size:12px; color:#7a8894; margin-bottom:6px; font-weight:600; }
-  .panel { background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(34,48,56,.08); overflow:hidden; }
-  .panel-head { display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1px solid #eef2f5; font-weight:700; font-size:15px; }
-  .count { background:#eef2f5; color:#5b6b78; border-radius:999px; padding:2px 11px; font-size:12px; font-weight:700; }
-  .panel-body { max-height:520px; overflow:auto; padding:4px 0 10px; }
-  .grp { padding:14px 18px 5px; font-size:11px; font-weight:700; letter-spacing:.4px; color:#9aa7b0; }
-  .task { display:flex; gap:9px; align-items:center; padding:7px 14px 7px 18px; font-size:14px; line-height:1.35; }
-  .task .mk { flex:0 0 14px; font-weight:700; color:#1a9d5a; }
-  .task-text { flex:1; }
-  .loading { padding:40px 20px; text-align:center; color:#8a97a1; font-size:14px; }
-  @media (max-width:1080px){ .cubes { grid-template-columns:repeat(3,235px); } }
-  @media (max-width:820px){ .cubes { grid-template-columns:repeat(2,235px); } }
-  @media (max-width:560px){ .cubes { grid-template-columns:1fr; } .page-label { display:none; } }
+* { box-sizing:border-box; }
+body { margin:0; background:#eef2f5; color:#223038; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+.topbar { background:#fff; border-bottom:3px solid #17a2b8; display:flex; align-items:center; gap:16px; padding:12px 24px; flex-wrap:wrap; }
+.logo { display:flex; align-items:center; gap:9px; }
+.logo-mark { font-weight:800; color:#17a2b8; font-size:20px; letter-spacing:.5px; }
+.page-label { color:#8a97a1; font-size:15px; padding-left:14px; border-left:1px solid #e2e8ec; }
+.navbtns { display:flex; gap:9px; margin-left:4px; }
+.navbtn { display:inline-flex; align-items:center; gap:6px; background:#fff; border:1px solid #dbe3e8; border-radius:9px; padding:7px 14px; font-size:14px; font-weight:600; color:#3a4a54; cursor:pointer; }
+.navbtn:hover { border-color:#17a2b8; color:#17a2b8; }
+.navbtn[disabled] { opacity:.4; cursor:default; }
+.whoami { margin-left:auto; display:flex; align-items:center; gap:10px; }
+.badge { width:36px; height:36px; border-radius:50%; background:#1a9d5a; color:#fff; font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center; }
+.user-name { font-size:14px; color:#445561; }
+.container { max-width:1080px; margin:0 auto; padding:26px 24px 60px; }
+.screen-title { font-size:25px; font-weight:700; margin:0 0 4px; }
+.screen-sub { font-size:15px; color:#6a7b86; margin:0 0 24px; }
+.cubes { display:grid; grid-template-columns:repeat(4,235px); gap:22px; justify-content:start; align-items:stretch; }
+.cube { background:#fff; border:1px solid #edf1f4; border-radius:10px; box-shadow:0 1px 3px rgba(34,48,56,.06); padding:22px 20px 26px; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+.cube:hover { transform:translateY(-2px); box-shadow:0 8px 18px rgba(34,48,56,.12); border-color:#dfe7ec; }
+.cube-icon { font-size:26px; line-height:1; display:block; margin-bottom:22px; }
+.cube-title { font-weight:700; font-size:15.5px; margin:0 0 8px; color:#1f2d36; }
+.cube-desc { font-size:13.5px; color:#7a8894; line-height:1.55; }
+.callout { background:#fff; border-left:4px solid #17a2b8; border-radius:10px; padding:15px 20px; box-shadow:0 2px 8px rgba(34,48,56,.08); margin-bottom:22px; font-size:14px; color:#3a4a54; line-height:1.5; }
+.callout b { color:#223038; }
+.btn-teal { background:#17a2b8; color:#fff; border:none; border-radius:8px; padding:8px 16px; font-weight:600; font-size:13px; cursor:pointer; }
+.btn-teal:hover { background:#1490a3; }
+.btn-outline { background:#fff; color:#17a2b8; border:1px solid #cfe6ea; border-radius:8px; padding:8px 16px; font-weight:600; font-size:13px; cursor:pointer; }
+.coord { background:#fff; border-radius:14px; box-shadow:0 2px 8px rgba(34,48,56,.08); margin-bottom:14px; overflow:hidden; }
+.coord-head { display:flex; align-items:center; gap:16px; padding:18px 22px; cursor:pointer; }
+.coord.attention > .coord-head { background:#fdf2f2; }
+.rank { font-size:22px; font-weight:800; color:#c3ccd2; width:40px; flex:0 0 40px; }
+.coord-main { flex:1; }
+.coord-name { font-weight:700; font-size:16px; }
+.attn { color:#d64545; font-weight:700; font-size:12.5px; margin-left:8px; }
+.coord-sub { color:#7a8894; font-size:13px; margin-top:3px; }
+.coord-pct { font-weight:800; font-size:17px; }
+.mini-caret { color:#b3c0c8; margin-left:14px; font-size:13px; transition:transform .15s ease; }
+.coord.open > .coord-head .mini-caret { transform:rotate(90deg); color:#17a2b8; }
+.res { display:flex; align-items:center; gap:12px; padding:13px 22px; border-top:1px solid #f0f3f5; }
+.dot { width:10px; height:10px; border-radius:50%; flex:0 0 10px; }
+.res-name { font-weight:500; }
+.res-staff { color:#95a3ad; font-size:13px; margin-left:auto; }
+.res-pct { font-weight:700; font-size:14px; width:50px; text-align:right; }
+.inp { padding:9px 12px; border:1px solid #d8e0e5; border-radius:8px; background:#fff; font-size:14px; color:#223038; }
+.list { background:#fff; border-radius:14px; box-shadow:0 2px 8px rgba(34,48,56,.08); overflow:hidden; }
+.empty { padding:26px 20px; color:#7a8894; font-size:14px; text-align:center; }
+.doc-label { font-size:11.5px; font-weight:700; letter-spacing:.9px; color:#9aa7b0; margin:0 0 12px 2px; }
+.doc-bar { display:flex; gap:12px; align-items:center; margin-bottom:18px; flex-wrap:wrap; }
+.search { flex:1; min-width:220px; display:flex; align-items:center; gap:8px; background:#fff; border-radius:10px; padding:9px 14px; box-shadow:0 2px 8px rgba(34,48,56,.06); }
+.search input { border:none; outline:none; flex:1; font-size:14px; background:transparent; color:#223038; }
+.seg { display:flex; background:#e6ebef; border-radius:10px; padding:3px; }
+.seg button { border:none; background:transparent; padding:7px 14px; border-radius:8px; font-size:13px; font-weight:600; color:#5b6b78; cursor:pointer; }
+.seg button.active { background:#fff; color:#17a2b8; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+.folder { background:#fff; border:1px solid #edf1f4; border-radius:12px; box-shadow:0 1px 3px rgba(34,48,56,.06); margin-bottom:12px; overflow:hidden; }
+.folder-head { display:flex; align-items:center; gap:11px; padding:15px 20px; cursor:pointer; }
+.folder-head:hover { background:#fafcfd; }
+.folder-name { font-size:15.5px; font-weight:500; }
+.folder-count { margin-left:auto; color:#9aa7b0; font-size:13px; }
+.folder-caret { color:#b3c0c8; font-size:12px; transition:transform .15s ease; }
+.folder.open .folder-caret { transform:rotate(180deg); color:#17a2b8; }
+.file-row { display:flex; align-items:center; gap:11px; padding:11px 20px 11px 34px; border-top:1px solid #f4f7f9; }
+.file-name { flex:1; font-size:14px; color:#4a5a65; }
+.file-acts { display:flex; gap:8px; flex-shrink:0; }
+.btn-view { background:#fff; color:#17a2b8; border:1px solid #17a2b8; border-radius:7px; padding:7px 18px; font-size:13px; font-weight:600; cursor:pointer; text-decoration:none; }
+.btn-plain { background:#fff; color:#5b6b78; border:1px solid #dbe3e8; border-radius:7px; padding:7px 15px; font-size:13px; font-weight:500; cursor:pointer; }
+.file-none .file-name { color:#9aa7b0; font-style:italic; }
+.sumbar { display:flex; gap:14px; margin-bottom:16px; }
+.stat { background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(34,48,56,.08); padding:16px 20px; flex:1; }
+.stat .n { font-size:26px; font-weight:800; }
+.stat .l { font-size:13px; color:#7a8894; margin-top:2px; }
+.today-row { display:flex; align-items:center; gap:12px; padding:13px 20px; border-bottom:1px solid #f0f3f5; }
+.t-status { margin-left:auto; font-size:13px; font-weight:600; }
+.btn-remind { margin-left:14px; padding:6px 14px; }
+.remind-done { margin-left:14px; font-size:12.5px; font-weight:600; color:#1a9d5a; background:#e4f4ee; border-radius:999px; padding:5px 12px; white-space:nowrap; }
+.sec-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:22px 2px 10px; font-size:13px; font-weight:700; color:#5b6b78; }
+.reset-note { margin-top:14px; font-size:12.5px; color:#9aa7b0; }
+.inbox-bar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+.inbox-meta { font-size:13px; color:#8a97a1; margin:0 2px 14px; }
+.inbox-table { background:#fff; border:1px solid #edf1f4; border-radius:12px; box-shadow:0 1px 3px rgba(34,48,56,.06); overflow-x:auto; }
+.inbox-table table { width:100%; border-collapse:collapse; font-size:14px; }
+.inbox-table th { text-align:left; padding:13px 16px; font-size:11px; letter-spacing:.7px; color:#9aa7b0; font-weight:800; border-bottom:1px solid #edf1f4; background:#fbfcfd; white-space:nowrap; }
+.inbox-table td { padding:13px 16px; border-bottom:1px solid #f4f7f9; vertical-align:middle; }
+.c-staff { font-weight:700; white-space:nowrap; }
+.c-res { color:#5b6b78; }
+.c-date { color:#5b6b78; white-space:nowrap; }
+.c-time { display:block; color:#9aa7b0; font-size:12px; margin-top:2px; }
+.c-note { color:#4a5a65; font-size:13px; }
+.cl-controls { display:flex; gap:22px; flex-wrap:wrap; margin-bottom:18px; }
+.fl { display:block; font-size:12px; color:#7a8894; margin-bottom:6px; font-weight:600; }
+.addcard { background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(34,48,56,.08); padding:18px 20px; margin-bottom:20px; }
+.addcard h4 { margin:0 0 14px; font-size:15px; }
+.add-row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+.add-row .inp { flex:1; min-width:150px; }
+.cl-grid { display:grid; grid-template-columns:1fr 120px 1fr; gap:16px; align-items:start; }
+.panel { background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(34,48,56,.08); overflow:hidden; }
+.panel-head { display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1px solid #eef2f5; font-weight:700; font-size:15px; }
+.count { background:#eef2f5; color:#5b6b78; border-radius:999px; padding:2px 11px; font-size:12px; font-weight:700; }
+.panel-body { max-height:470px; overflow:auto; padding:4px 0 10px; }
+.grp { padding:14px 18px 5px; font-size:11px; font-weight:700; letter-spacing:.4px; color:#9aa7b0; }
+.task { display:flex; gap:9px; align-items:center; padding:7px 14px 7px 18px; cursor:pointer; font-size:14px; line-height:1.35; }
+.task:hover { background:#f7f9fb; }
+.task.sel { background:#e7f6f8; }
+.task .mk { flex:0 0 14px; font-weight:700; }
+.task.live .mk { color:#1a9d5a; }
+.task.removed .mk { color:#17a2b8; }
+.task-text { flex:1; }
+.task-tools { display:flex; align-items:center; gap:5px; opacity:0; transition:opacity .12s ease; }
+.task:hover .task-tools, .task.sel .task-tools { opacity:1; }
+.freq-sel { border:1px solid #dbe3e8; border-radius:6px; background:#fff; font-size:11.5px; padding:2px 4px; color:#5b6b78; cursor:pointer; }
+.icon-btn { border:1px solid #dbe3e8; background:#fff; border-radius:6px; width:22px; height:22px; line-height:1; font-size:12px; color:#8a97a1; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.icon-btn:hover { border-color:#d64545; color:#d64545; }
+.midbtns { display:flex; flex-direction:column; gap:10px; padding-top:52px; }
+.btn-mid { background:#fff; border:1px solid #d8e0e5; border-radius:8px; padding:9px 6px; font-weight:600; font-size:13px; color:#3a4a54; cursor:pointer; }
+.btn-mid:hover { border-color:#17a2b8; color:#17a2b8; }
+.loading { padding:50px; text-align:center; color:#9aa7b0; font-size:15px; }
+@media (max-width:1080px){ .cubes { grid-template-columns:repeat(3,235px); } }
+@media (max-width:820px){ .cubes { grid-template-columns:repeat(2,235px); } .cl-grid { grid-template-columns:1fr; } .midbtns { flex-direction:row; padding-top:0; justify-content:center; flex-wrap:wrap; } }
+@media (max-width:560px){ .cubes { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="logo"><span class="logo-mark">HASC CENTER</span></div>
-    <div class="page-label" id="pageLabel">RM Compliance</div>
-    <div class="navbtns">
-      <button class="navbtn" id="backBtn">&larr; Back</button>
-      <button class="navbtn" id="homeBtn">&#127968; Home</button>
-    </div>
-    <div class="whoami"><div class="badge" id="badge">--</div><div class="user-name" id="userName">Loading…</div></div>
-  </header>
-  <main class="container" id="view"><div class="loading">Loading your data…</div></main>
+<header class="topbar">
+  <div class="logo"><span class="logo-mark">HASC</span></div>
+  <div class="page-label" id="pageLabel">RM Compliance</div>
+  <div class="navbtns">
+    <button class="navbtn" id="backBtn">&larr; Back</button>
+    <button class="navbtn" id="homeBtn">&#127968; Home</button>
+  </div>
+  <div class="whoami"><div class="badge">MS</div><div class="user-name">Michael Shilcrat</div></div>
+</header>
+<main class="container" id="view"><div class="loading">Loading live data…</div></main>
 <script>
-/* ============ DATA LAYER — real Supabase reads (writes OFF) ============ */
-const sb = window.__hascClient;
-const NY = "America/New_York";
-function nyParts(){
-  const f = new Intl.DateTimeFormat('en-US',{ timeZone:NY, year:'numeric',month:'2-digit',day:'2-digit',hour:'numeric',minute:'2-digit',hour12:true,weekday:'short'});
-  const p={}; f.formatToParts(new Date()).forEach(x=>p[x.type]=x.value); return p;
-}
-function nyDateKey(){ const p=nyParts(); return p.year+"-"+p.month+"-"+p.day; }
-function nyDateLabel(){ const p=nyParts(); return p.weekday+", "+p.month+"/"+p.day+"/"+p.year+" \u00B7 "+p.hour+":"+p.minute+" "+p.dayPeriod+" ET"; }
-function nyDateKeyOf(iso){ try{ const f=new Intl.DateTimeFormat('en-US',{timeZone:NY,year:'numeric',month:'2-digit',day:'2-digit'}); const p={}; f.formatToParts(new Date(iso)).forEach(x=>p[x.type]=x.value); return p.year+"-"+p.month+"-"+p.day; }catch(e){ return ""; } }
-function fmtDate(iso){ try{ return new Intl.DateTimeFormat('en-US',{timeZone:NY,month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date(iso)); }catch(e){ return iso; } }
-
-// caches
-let CACHE = { homes:null, tasks:null, subs:null, profiles:null, nameByEmail:null };
-async function loadCore(){
-  if(CACHE.homes) return CACHE;
-  const [homes,tasks,profiles] = await Promise.all([
-    sb.from('cl_homes').select('home_name,site,rm_email,ac_email'),
-    sb.from('cl_tasks').select('home_name,task_name,frequency'),
-    sb.from('profiles').select('email,full_name,role')
-  ]);
-  CACHE.homes = homes.data||[];
-  CACHE.tasks = tasks.data||[];
-  CACHE.profiles = profiles.data||[];
-  CACHE.nameByEmail = {}; CACHE.profiles.forEach(p=>{ CACHE.nameByEmail[(p.email||'').toLowerCase()] = p.full_name || p.email; });
-  return CACHE;
-}
-function nm(email){ if(!email) return "\u2014"; return CACHE.nameByEmail[email.toLowerCase()] || email; }
-async function loadSubs(){
-  if(CACHE.subs) return CACHE.subs;
-  const r = await sb.from('cl_submissions').select('home_name,submitted_by,submitted_at,frequency,tasks_done,tasks_total,comments').order('submitted_at',{ascending:false}).limit(500);
-  CACHE.subs = r.data||[]; return CACHE.subs;
-}
-
-const API = {
-  async getCoordinators(){
-    await loadCore(); const subs = await loadSubs();
-    const cutoff = Date.now() - 7*24*3600*1000;
-    // per-home recent compliance (keyed on residence, never manager)
-    const homeStats = {};
-    CACHE.homes.forEach(h=>{ homeStats[h.home_name] = { done:0, total:0, n:0 }; });
-    subs.forEach(s=>{
-      if(new Date(s.submitted_at).getTime() < cutoff) return;
-      const st = homeStats[s.home_name]; if(!st) return;
-      st.done += (s.tasks_done||0); st.total += (s.tasks_total||0); st.n++;
-    });
-    function homePct(h){ const st=homeStats[h]; if(!st||st.total===0) return 0; return Math.round(100*st.done/st.total); }
-    // group homes by AC (residence-keyed)
-    const byAc = {};
-    CACHE.homes.forEach(h=>{ (byAc[h.ac_email]=byAc[h.ac_email]||[]).push(h); });
-    const coords = Object.keys(byAc).map(ac=>{
-      const residences = byAc[ac].map(h=>({ name:h.home_name, staff:nm(h.rm_email), pct:homePct(h.home_name) }));
-      const pcts = residences.map(r=>r.pct);
-      const avg = pcts.length ? Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length) : 0;
-      const behind = residences.filter(r=>r.pct<50).length;
-      return { name:nm(ac), pct:avg, behind, total:residences.length, residences:residences.sort((a,b)=>a.pct-b.pct) };
-    });
-    return coords.sort((a,b)=>a.pct-b.pct);
-  },
-  async getChecklist(homeName){
-    await loadCore();
-    const rows = CACHE.tasks.filter(t=>t.home_name===homeName);
-    const live = rows.map(t=>({ text:t.task_name, freq:t.frequency, section:(t.frequency||'').toUpperCase() }));
-    return { live, removed:[] };
-  },
-  async getHomes(){ await loadCore(); return CACHE.homes.map(h=>({ name:h.home_name, staff:nm(h.rm_email) })); },
-  async getToday(){
-    await loadCore(); const subs = await loadSubs(); const key = nyDateKey();
-    const signedSet = {};
-    subs.forEach(s=>{ if(nyDateKeyOf(s.submitted_at)===key) signedSet[s.home_name] = signedSet[s.home_name] || fmtDate(s.submitted_at); });
-    const signed=[], pending=[];
-    CACHE.homes.forEach(h=>{ if(signedSet[h.home_name]) signed.push({name:h.home_name,at:signedSet[h.home_name]}); else pending.push({name:h.home_name}); });
-    return { signed, pending, total:CACHE.homes.length };
-  },
-  async getInbox(){
-    await loadCore(); const subs = await loadSubs();
-    return subs.filter(s=>s.comments && String(s.comments).trim().length>0)
-      .map(s=>({ residence:s.home_name, by:nm(s.submitted_by), note:String(s.comments).trim(), date:fmtDate(s.submitted_at), type:s.frequency||'Checklist' }));
-  },
-  async getDocuments(){ return []; } // cl_documents empty — clean empty state
-};
-
-/* ============ UI ============ */
+const SB = supabase.createClient(window.HASC_CONFIG.SUPABASE_URL, window.HASC_CONFIG.SUPABASE_ANON_KEY);
+const TZ = "America/New_York";
+const FREQS = ["Daily","Weekly","Monthly","Quarterly","Annually"];
+const FREQ_KEYS = { Daily:"daily", Weekly:"weekly", Monthly:"monthly", Quarterly:"quarterly", Annually:"annual" };
 const areas = [
   { id:"today", icon:"\uD83D\uDCC5", title:"Today", desc:"Which homes signed off today and which are still pending." },
-  { id:"insights", icon:"\uD83D\uDCCA", title:"Insights", desc:"Compliance by area coordinator over the last 7 days." },
-  { id:"documents", icon:"\uD83D\uDCC4", title:"Documents", desc:"Signed checklist files for any home." },
-  { id:"checklists", icon:"\uD83D\uDCCB", title:"Checklists", desc:"The tasks defined for every residence." },
-  { id:"inbox", icon:"\uD83D\uDCE5", title:"Inbox", desc:"Recent notes left on checklist submissions." }
+  { id:"insights", icon:"\uD83D\uDCCA", title:"Insights", desc:"Compliance trends by home and coordinator." },
+  { id:"documents", icon:"\uD83D\uDCC4", title:"Documents", desc:"Grab the latest signed checklist for any home." },
+  { id:"checklists", icon:"\uD83D\uDCCB", title:"Checklists", desc:"Open and manage the checklists behind every residence." },
+  { id:"inbox", icon:"\uD83D\uDCE5", title:"Inbox", desc:"Newly signed documents land here \u2014 mark each Handled once filed." }
 ];
-const state = { tab:"home", coord:null, res:null, clHome:null };
-let history = [];
-const view = document.getElementById("view");
-const pageLabel = document.getElementById("pageLabel");
-const backBtn = document.getElementById("backBtn");
-const homeBtn = document.getElementById("homeBtn");
-function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+let HOMES=[], COORDS=[], LIBRARY=[], SUBS=[], PROF={};
+function nameFromEmail(e){ if(!e) return "\u2014"; e=e.toLowerCase(); if(PROF[e]&&PROF[e].full_name) return PROF[e].full_name; return e.split("@")[0]; }
+function todayCount(homeName){
+  // real per-home compliance from cl_done vs cl_library size
+  const doneSet = window.__doneByHome[homeName] || new Set();
+  const total = LIBRARY.length || 1;
+  return Math.round((doneSet.size/total)*100);
+}
+async function loadAll(){
+  const [homesR, profR, libR, subR, doneR] = await Promise.all([
+    SB.from("cl_homes").select("home_name,site,rm_email,ac_email"),
+    SB.from("profiles").select("email,full_name,role"),
+    SB.from("cl_library").select("id,frequency,section,task_name,sort_order").order("sort_order"),
+    SB.from("cl_submissions").select("*").order("submitted_at",{ascending:false}),
+    SB.from("cl_done").select("home_name,task_id")
+  ]);
+  (profR.data||[]).forEach(p=>{ if(p.email) PROF[p.email.toLowerCase()]=p; });
+  LIBRARY = libR.data||[];
+  SUBS = subR.data||[];
+  window.__doneByHome = {};
+  (doneR.data||[]).forEach(d=>{ (window.__doneByHome[d.home_name]=window.__doneByHome[d.home_name]||new Set()).add(d.task_id); });
+  HOMES = (homesR.data||[]).map(h=>({ home_name:h.home_name, site:h.site, rm_email:h.rm_email, ac_email:h.ac_email, rm_name:nameFromEmail(h.rm_email), ac_name:nameFromEmail(h.ac_email) }));
+  HOMES.forEach(h=> h.pct = todayCount(h.home_name));
+  const byC={};
+  HOMES.forEach(h=>{ const k=h.ac_name||"Unassigned"; (byC[k]=byC[k]||[]).push(h); });
+  COORDS = Object.keys(byC).map(name=>{ const res=byC[name]; const avg=res.length?Math.round(res.reduce((a,r)=>a+(r.pct||0),0)/res.length):0; return { name, pct:avg, total:res.length, behind:res.filter(r=>(r.pct||0)<70).length, residences:res }; }).sort((a,b)=>a.pct-b.pct);
+}
+function nycParts(){ const f=new Intl.DateTimeFormat('en-US',{ timeZone:TZ, year:'numeric', month:'2-digit', day:'2-digit', hour:'numeric', minute:'2-digit', hour12:true, weekday:'short' }); const p={}; f.formatToParts(new Date()).forEach(x=>p[x.type]=x.value); return p; }
+function nycDateKey(){ const p=nycParts(); return p.year+"-"+p.month+"-"+p.day; }
+function nycTimeLabel(){ const p=nycParts(); return p.hour+":"+p.minute+" "+p.dayPeriod; }
+function nycDateLabel(){ const p=nycParts(); return p.weekday+", "+p.month+"/"+p.day+"/"+p.year+" \u00B7 "+nycTimeLabel()+" ET"; }
+const reminders={ day:nycDateKey(), sent:{} };
+function reminderCheck(){ const d=nycDateKey(); if(reminders.day!==d){ reminders.day=d; reminders.sent={}; } }
+function reminderSent(h){ reminderCheck(); return reminders.sent[h]||null; }
+function reminderMark(h){ reminderCheck(); reminders.sent[h]=nycTimeLabel(); }
+const state={ tab:"home", coord:null, res:null, docSearch:"", docSort:"recent", docOpen:new Set(), docFiles:{}, clHome:null, clFilter:"All frequencies", live:[], removed:[], inSearch:"", inTab:"inbox", sel:new Set() };
+let history=[];
+const view=document.getElementById("view"), pageLabel=document.getElementById("pageLabel"), backBtn=document.getElementById("backBtn"), homeBtn=document.getElementById("homeBtn");
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
 function pctColor(p){ return p>=70?"#1a9d5a":(p>=40?"#c77d16":"#d64545"); }
 function dotColor(p){ return p>=50?"#1a9d5a":"#d64545"; }
-function goTo(tab){ history.push({tab:state.tab,coord:state.coord,res:state.res,clHome:state.clHome}); state.tab=tab; state.coord=null; state.res=null; render(); }
+function goTo(t){ history.push(snap()); state.tab=t; state.coord=null; state.res=null; state.sel.clear(); render(); }
+function snap(){ return { tab:state.tab, coord:state.coord, res:state.res, clHome:state.clHome }; }
+function restore(s){ state.tab=s.tab; state.coord=s.coord; state.res=s.res; state.clHome=s.clHome; state.sel.clear(); }
 
-function renderHome(){
-  let h='<h1 class="screen-title">Welcome back'+(window.__ME?', '+esc(window.__ME.split(' ')[0]):'')+'</h1>';
-  h+='<p class="screen-sub">Choose where you want to go.</p><div class="cubes">';
-  areas.forEach(a=>{ h+='<div class="cube" data-tile="'+a.id+'"><div class="cube-icon">'+a.icon+'</div><div class="cube-title">'+esc(a.title)+'</div><div class="cube-desc">'+esc(a.desc)+'</div></div>'; });
+function renderHome(){ let h='<h1 class="screen-title">Welcome back, Michael</h1><p class="screen-sub">Choose where you want to go.</p><div class="cubes">'; areas.forEach(a=> h+='<div class="cube" data-tile="'+a.id+'"><div class="cube-icon">'+a.icon+'</div><div class="cube-title">'+esc(a.title)+'</div><div class="cube-desc">'+esc(a.desc)+'</div></div>'); return h+'</div>'; }
+function renderInsights(){
+  let h='<div class="callout"><b>Compliance overview</b> \u2014 ranked worst-first, from live cl_done data. Click a coordinator to expand their residences.</div>';
+  COORDS.forEach((c,i)=>{ const att=c.pct<30, open=state.coord===c.name;
+    h+='<div class="coord'+(att?' attention':'')+(open?' open':'')+'"><div class="coord-head" data-act="coord" data-id="'+esc(c.name)+'"><div class="rank">#'+(i+1)+'</div><div class="coord-main"><div class="coord-name">'+esc(c.name)+(att?'<span class="attn">\u26A0 NEEDS ATTENTION</span>':'')+'</div><div class="coord-sub">'+c.behind+' of '+c.total+' residences behind</div></div><div class="coord-pct" style="color:'+pctColor(c.pct)+'">'+c.pct+'%</div><span class="mini-caret">\u25B8</span></div>';
+    if(open){ c.residences.slice().sort((a,b)=>(a.pct||0)-(b.pct||0)).forEach(r=>{ h+='<div class="res"><span class="dot" style="background:'+dotColor(r.pct||0)+'"></span><span class="res-name">'+esc(r.home_name)+'</span><span class="res-staff">'+esc(r.rm_name)+'</span><span class="res-pct" style="color:'+pctColor(r.pct||0)+'">'+(r.pct||0)+'%</span></div>'; }); }
+    h+='</div>'; });
+  return h;
+}
+async function loadDocs(homeName){ if(state.docFiles[homeName]) return state.docFiles[homeName]; const { data }=await SB.from("cl_documents").select("id,doc_type,name,date,url,version").eq("home_name",homeName).order("date",{ascending:false}); state.docFiles[homeName]=data||[]; return state.docFiles[homeName]; }
+function renderDocuments(){
+  let h='<div class="callout"><b>Documents</b> \u2014 signed files for each home, from live data.</div>';
+  h+='<div class="doc-bar"><div class="search"><span>\u2315</span><input type="text" data-doc-search placeholder="Search a home\u2026" value="'+esc(state.docSearch)+'"></div><select class="inp" data-doc-sort><option value="recent"'+(state.docSort==="recent"?" selected":"")+'>Most recent</option><option value="az"'+(state.docSort==="az"?" selected":"")+'>A \u2013 Z</option></select></div>';
+  let homes=HOMES.slice(); if(state.docSort==="az") homes.sort((a,b)=>a.home_name.localeCompare(b.home_name));
+  const q=state.docSearch.trim().toLowerCase(); if(q) homes=homes.filter(x=>x.home_name.toLowerCase().indexOf(q)>-1);
+  h+='<div id="docList">';
+  homes.forEach(home=>{ const open=state.docOpen.has(home.home_name); const files=state.docFiles[home.home_name]||null;
+    h+='<div class="folder'+(open?' open':'')+'"><div class="folder-head" data-doc-folder="'+esc(home.home_name)+'"><span>\uD83D\uDCC1</span><span class="folder-name">'+esc(home.home_name)+'</span><span class="folder-count">'+(files?(files.length?files.length+' file'+(files.length>1?'s':''):'no files'):'')+'</span><span class="folder-caret">\u25BE</span></div>';
+    if(open){ if(!files) h+='<div class="file-row file-none"><span class="file-name">Loading\u2026</span></div>'; else if(!files.length) h+='<div class="file-row file-none"><span class="file-name">No signed file yet</span></div>'; else files.forEach(f=>{ h+='<div class="file-row"><span>\uD83D\uDCC4</span><span class="file-name">'+esc(f.name||f.doc_type||"Document")+(f.date?' \u2013 '+esc(f.date):'')+'</span><span class="file-acts">'+(f.url?'<a class="btn-view" href="'+esc(f.url)+'" target="_blank">View</a>':'<button class="btn-view" disabled>View</button>')+'</span></div>'; }); }
+    h+='</div>'; });
+  if(!homes.length) h+='<div class="empty">Nothing matches that search.</div>';
   return h+'</div>';
 }
-async function renderInsights(){
-  const coords = await API.getCoordinators();
-  let h='<h1 class="screen-title">Insights</h1><p class="screen-sub">Compliance by area coordinator \u2014 last 7 days</p>';
-  coords.forEach((c,i)=>{
-    const attention=c.pct<30, open=state.coord===c.name;
-    h+='<div class="coord'+(attention?' attention':'')+(open?' open':'')+'"><div class="coord-head" data-act="coord" data-id="'+esc(c.name)+'"><div class="rank">#'+(i+1)+'</div><div class="coord-main"><div class="coord-name">'+esc(c.name)+(attention?'<span class="attn">\u26A0 NEEDS ATTENTION</span>':'')+'</div><div class="coord-sub">'+c.behind+' of '+c.total+' residences behind</div></div><div class="coord-pct" style="color:'+pctColor(c.pct)+'">'+c.pct+'%</div><span class="mini-caret">\u25B8</span></div>';
-    if(open){ c.residences.forEach(r=>{ h+='<div class="res"><span class="dot" style="background:'+dotColor(r.pct)+'"></span><span class="res-name">'+esc(r.name)+'</span><span class="res-staff">'+esc(r.staff)+'</span><span class="res-pct" style="color:'+pctColor(r.pct)+'">'+r.pct+'%</span></div>'; }); }
-    h+='</div>';
-  });
+function renderToday(){
+  reminderCheck();
+  const signed=HOMES.filter(h=>h.pct>=70), pending=HOMES.filter(h=>h.pct<70);
+  const reminded=pending.filter(h=>reminderSent(h.home_name)).length;
+  let h='<div class="callout"><b>Today</b> \u2014 which homes signed off and which are still pending.</div>';
+  h+='<div class="doc-label">'+esc(nycDateLabel())+'</div>';
+  h+='<div class="sumbar"><div class="stat"><div class="n" style="color:#1a9d5a">'+signed.length+'</div><div class="l">At/above 70%</div></div><div class="stat"><div class="n" style="color:#d64545">'+pending.length+'</div><div class="l">Still pending</div></div><div class="stat"><div class="n" style="color:#17a2b8">'+reminded+'</div><div class="l">Reminded today</div></div></div>';
+  if(pending.length){ h+='<div class="sec-head"><span>Still pending</span><button class="btn-outline" data-remind-all>Remind all pending</button></div><div class="list">';
+    pending.forEach(home=>{ const at=reminderSent(home.home_name); h+='<div class="today-row"><span class="dot" style="background:#d64545"></span><span>'+esc(home.home_name)+'</span><span class="t-status" style="color:#d64545">'+home.pct+'%</span>'+(at?'<span class="remind-done">Reminded '+esc(at)+'</span>':'<button class="btn-outline btn-remind" data-remind="'+esc(home.home_name)+'">Remind</button>')+'</div>'; });
+    h+='</div>'; }
+  h+='<div class="sec-head"><span>On track</span></div><div class="list">';
+  signed.forEach(home=>{ h+='<div class="today-row"><span class="dot" style="background:#1a9d5a"></span><span>'+esc(home.home_name)+'</span><span class="t-status" style="color:#1a9d5a">'+home.pct+'%</span></div>'; });
+  h+='</div><div class="reset-note">Reminders reset automatically at midnight, New York time.</div>';
   return h;
 }
-async function renderChecklists(){
-  const homes = await API.getHomes();
-  if(!state.clHome && homes.length) state.clHome = homes[0].name;
-  const cl = await API.getChecklist(state.clHome);
-  const homeSel = homes.map(x=>'<option'+(state.clHome===x.name?" selected":"")+'>'+esc(x.name)+'</option>').join("");
-  let h='<h1 class="screen-title">Checklists</h1><p class="screen-sub">Tasks defined per home, by frequency</p>';
-  h+='<div class="cl-controls"><div><label class="fl">Home</label><select class="inp" data-cl-home>'+homeSel+'</select></div></div>';
-  const groups={}; cl.live.forEach(t=>{ (groups[t.freq]=groups[t.freq]||[]).push(t); });
-  h+='<div class="panel"><div class="panel-head"><span>'+esc(state.clHome)+'</span><span class="count">'+cl.live.length+' tasks</span></div><div class="panel-body">';
-  if(!cl.live.length) h+='<div class="empty">No tasks for this home.</div>';
-  ['Daily','Weekly','Monthly','Quarterly','Annual','Annually'].forEach(fr=>{ if(groups[fr]){ h+='<div class="grp">'+esc(fr)+'</div>'; groups[fr].forEach(t=>{ h+='<div class="task"><span class="mk">\u2713</span><span class="task-text">'+esc(t.text)+'</span></div>'; }); } });
+function inboxVisible(){ const q=state.inSearch.trim().toLowerCase(); return SUBS.filter(s=>{ if(q && ((s.submitted_by||"")+" "+(s.home_name||"")+" "+(s.comments||"")).toLowerCase().indexOf(q)===-1) return false; if(state.inTab==="notes" && !(s.comments&&s.comments.trim())) return false; return true; }); }
+function renderInbox(){
+  const list=inboxVisible();
+  let h='<div class="callout"><b>Inbox</b> \u2014 recent signed submissions from the homes, live from cl_submissions.</div>';
+  h+='<div class="inbox-bar"><div class="search"><span>\uD83D\uDD0D</span><input type="text" data-in-search placeholder="Search RM, residence, or note\u2026" value="'+esc(state.inSearch)+'"></div><div class="seg"><button data-in-tab="inbox" class="'+(state.inTab==="inbox"?"active":"")+'">All</button><button data-in-tab="notes" class="'+(state.inTab==="notes"?"active":"")+'">With notes</button></div></div>';
+  h+='<div class="inbox-meta">'+list.length+' showing</div>';
+  h+='<div class="inbox-table"><table><thead><tr><th>RM</th><th>RESIDENCE</th><th>CYCLE</th><th>DONE</th><th>SIGNED</th><th>NOTE</th></tr></thead><tbody>';
+  if(!list.length) h+='<tr><td colspan="6" class="empty">Nothing here right now.</td></tr>';
+  list.forEach(s=>{ const dt=s.submitted_at?new Date(s.submitted_at):null; const dstr=dt?dt.toLocaleDateString('en-US',{timeZone:TZ}):''; const tstr=dt?dt.toLocaleTimeString('en-US',{timeZone:TZ,hour:'numeric',minute:'2-digit'}):'';
+    h+='<tr><td class="c-staff">'+esc(nameFromEmail(s.submitted_by)||s.submitted_by)+'</td><td class="c-res">'+esc(s.home_name)+'</td><td>'+esc(s.frequency||"\u2014")+'</td><td>'+(s.tasks_total?s.tasks_done+"/"+s.tasks_total:"\u2014")+'</td><td class="c-date">'+esc(dstr)+'<span class="c-time">'+esc(tstr)+'</span></td><td class="c-note">'+esc(s.comments||"")+'</td></tr>'; });
+  return h+'</tbody></table></div>';
+}
+
+// ---------- Checklists: two-panel builder on cl_library ----------
+function freqLabel(fk){ for(const k in FREQ_KEYS){ if(FREQ_KEYS[k]===fk) return k; } return (fk||"").charAt(0).toUpperCase()+(fk||"").slice(1); }
+function ensureCLLoaded(){
+  // Left panel = full library (the master task set). Right panel = removed (per-session).
+  if(!state.__clInit){
+    state.live = LIBRARY.map(t=>({ id:t.id, freq:freqLabel(t.frequency), section:(t.section||"GENERAL").toUpperCase(), text:t.task_name, _new:false }));
+    state.removed = [];
+    state.__clInit = true;
+  }
+}
+function groupTasks(tasks){ const order=[], b={}; tasks.forEach(t=>{ if(state.clFilter!=="All frequencies" && t.freq!==state.clFilter) return; const key=t.freq.toUpperCase()+" \u00B7 "+t.section; if(!b[key]){ b[key]=[]; order.push(key); } b[key].push(t); }); return { order, buckets:b }; }
+function panelHTML(title, tasks, side){
+  let h='<div class="panel"><div class="panel-head"><span>'+title+'</span><span class="count">'+tasks.length+'</span></div><div class="panel-body">';
+  const g=groupTasks(tasks); if(!g.order.length) h+='<div class="empty">No tasks here.</div>';
+  g.order.forEach(key=>{ h+='<div class="grp">'+esc(key)+'</div>'; g.buckets[key].forEach(t=>{ const sc=state.sel.has(t.id)?' sel':''; const mk=side==="live"?"\u2713":"+"; const opts=FREQS.map(f=>'<option'+(t.freq===f?" selected":"")+'>'+f+'</option>').join("");
+    h+='<div class="task '+side+sc+'" data-cl-task="'+esc(t.id)+'"><span class="mk">'+mk+'</span><span class="task-text">'+esc(t.text)+'</span><span class="task-tools"><select class="freq-sel" data-cl-freqmove="'+esc(t.id)+'">'+opts+'</select><button class="icon-btn" data-cl-del="'+esc(t.id)+'" title="Delete permanently">\u2715</button></span></div>'; }); });
   return h+'</div></div>';
 }
-async function renderToday(){
-  const t = await API.getToday();
-  let h='<div class="callout"><b>Today</b> \u2014 which homes signed off today and which are still pending.</div>';
-  h+='<div class="doc-label">'+esc(nyDateLabel())+'</div>';
-  h+='<div class="sumbar"><div class="stat"><div class="n" style="color:#1a9d5a">'+t.signed.length+'</div><div class="l">Signed off today</div></div><div class="stat"><div class="n" style="color:#d64545">'+t.pending.length+'</div><div class="l">Still pending</div></div><div class="stat"><div class="n" style="color:#17a2b8">'+t.total+'</div><div class="l">Total homes</div></div></div>';
-  if(t.pending.length){ h+='<div class="sec-head"><span>Still pending</span></div><div class="list">'; t.pending.forEach(p=>{ h+='<div class="today-row"><span class="dot" style="background:#d64545"></span><span>'+esc(p.name)+'</span><span class="t-status" style="color:#d64545">Pending</span></div>'; }); h+='</div>'; }
-  if(t.signed.length){ h+='<div class="sec-head"><span>Signed off</span></div><div class="list">'; t.signed.forEach(s=>{ h+='<div class="today-row"><span class="dot" style="background:#1a9d5a"></span><span>'+esc(s.name)+'</span><span class="t-status" style="color:#1a9d5a">'+esc(s.at)+'</span></div>'; }); h+='</div>'; }
+function renderChecklists(){
+  ensureCLLoaded();
+  let h='<div class="callout"><b>Checklists</b> \u2014 the master task library. Left is active; right is removed. Hover a task to change frequency or delete. Deletes save to Supabase (cl_library); moves are per-home layout.</div>';
+  const freqSel=["All frequencies"].concat(FREQS).map(f=>'<option'+(state.clFilter===f?" selected":"")+'>'+f+'</option>').join("");
+  h+='<div class="cl-controls"><div><label class="fl">Show tasks</label><select class="inp" data-cl-filter>'+freqSel+'</select></div></div>';
+  h+='<div class="addcard"><h4>+ Add a new task</h4><div class="add-row"><input class="inp" data-cl-name placeholder="Task name"><select class="inp" data-cl-freq>'+FREQS.map(f=>'<option>'+f+'</option>').join("")+'</select><input class="inp" data-cl-section placeholder="Section (optional)"><button class="btn-teal" data-cl-add>Add task</button></div></div>';
+  h+='<div class="cl-grid">'+panelHTML("Active tasks", state.live, "live")+'<div class="midbtns"><button class="btn-mid" data-cl-move="add">\u00AB Add</button><button class="btn-mid" data-cl-move="remove">Remove \u00BB</button><button class="btn-mid" data-cl-move="addall">Add all</button><button class="btn-mid" data-cl-move="removeall">Remove all</button></div>'+panelHTML("Removed", state.removed, "removed")+'</div>';
   return h;
 }
-async function renderInbox(){
-  const items = await API.getInbox();
-  let h='<h1 class="screen-title">Inbox</h1><p class="screen-sub">Recent notes left on checklist submissions</p>';
-  if(!items.length) h+='<div class="empty">No notes yet.</div>';
-  items.forEach(it=>{ h+='<div class="inbox-item"><div class="inbox-top"><span class="inbox-res">'+esc(it.residence)+'</span><span class="inbox-date">'+esc(it.date)+'</span></div><div class="inbox-body">'+esc(it.note)+'</div><div class="inbox-by">\u2014 '+esc(it.by)+'</div></div>'; });
-  return h;
+function render(){
+  const area=areas.find(a=>a.id===state.tab); pageLabel.textContent=area?area.title:"RM Compliance"; backBtn.disabled=history.length===0; homeBtn.disabled=state.tab==="home";
+  let html="";
+  if(state.tab==="home") html=renderHome();
+  else if(state.tab==="today") html=renderToday();
+  else if(state.tab==="insights") html=renderInsights();
+  else if(state.tab==="documents") html=renderDocuments();
+  else if(state.tab==="checklists") html=renderChecklists();
+  else if(state.tab==="inbox") html=renderInbox();
+  view.innerHTML=html;
 }
-async function renderDocuments(){
-  const docs = await API.getDocuments();
-  let h='<h1 class="screen-title">Documents</h1><p class="screen-sub">Signed checklist files by home</p>';
-  if(!docs.length) h+='<div class="empty">No signed documents have been filed yet.</div>';
-  return h;
-}
-async function render(){
-  const area=areas.find(a=>a.id===state.tab);
-  pageLabel.textContent = area?area.title:"RM Compliance";
-  backBtn.disabled = history.length===0; homeBtn.disabled = state.tab==="home";
-  view.innerHTML='<div class="loading">Loading\u2026</div>';
-  try {
-    let html="";
-    if(state.tab==="home") html=renderHome();
-    else if(state.tab==="today") html=await renderToday();
-    else if(state.tab==="insights") html=await renderInsights();
-    else if(state.tab==="documents") html=await renderDocuments();
-    else if(state.tab==="checklists") html=await renderChecklists();
-    else if(state.tab==="inbox") html=await renderInbox();
-    view.innerHTML=html;
-  } catch(e){ view.innerHTML='<div class="empty">Could not load this screen: '+esc(e.message)+'</div>'; }
-}
-backBtn.addEventListener("click",function(){ if(history.length){ const s=history.pop(); state.tab=s.tab; state.coord=s.coord; state.res=s.res; state.clHome=s.clHome; render(); } });
-homeBtn.addEventListener("click",function(){ if(state.tab!=="home"){ history.push({tab:state.tab,coord:state.coord,res:state.res,clHome:state.clHome}); state.tab="home"; render(); } });
-document.addEventListener("click",function(e){
+backBtn.addEventListener("click", ()=>{ if(history.length){ restore(history.pop()); render(); } });
+homeBtn.addEventListener("click", ()=>{ if(state.tab!=="home"){ history.push(snap()); state.tab="home"; state.sel.clear(); render(); } });
+document.addEventListener("click", async function(e){
   const tile=e.target.closest("[data-tile]"); if(tile){ goTo(tile.dataset.tile); return; }
   const coord=e.target.closest('[data-act="coord"]'); if(coord){ const id=coord.dataset.id; state.coord=(state.coord===id)?null:id; render(); return; }
+  const itab=e.target.closest("[data-in-tab]"); if(itab){ state.inTab=itab.dataset.inTab; render(); return; }
+  const rm=e.target.closest("[data-remind]"); if(rm){ reminderMark(rm.dataset.remind); render(); return; }
+  const rall=e.target.closest("[data-remind-all]"); if(rall){ HOMES.filter(x=>x.pct<70).forEach(x=>reminderMark(x.home_name)); render(); return; }
+  const fold=e.target.closest("[data-doc-folder]"); if(fold){ const n=fold.dataset.docFolder; if(state.docOpen.has(n)) state.docOpen.delete(n); else { state.docOpen.add(n); await loadDocs(n); } render(); return; }
+  const del=e.target.closest("[data-cl-del]"); if(del){ const id=del.dataset.clDel; if(confirm("Permanently delete this task from the library?")){ await SB.from("cl_library").delete().eq("id",id); state.live=state.live.filter(t=>t.id!==id); state.removed=state.removed.filter(t=>t.id!==id); state.sel.delete(id); render(); } return; }
+  const task=e.target.closest("[data-cl-task]"); if(task){ const id=task.dataset.clTask; if(state.sel.has(id)) state.sel.delete(id); else state.sel.add(id); render(); return; }
+  const add=e.target.closest("[data-cl-add]"); if(add){ const name=(view.querySelector("[data-cl-name]").value||"").trim(); if(name){ const freq=view.querySelector("[data-cl-freq]").value; const section=(view.querySelector("[data-cl-section]").value||"GENERAL").toUpperCase(); const maxSort=LIBRARY.reduce((m,t)=>Math.max(m,t.sort_order||0),0)+1; const { data }=await SB.from("cl_library").insert({ frequency:FREQ_KEYS[freq], section:section, task_name:name, sort_order:maxSort }).select().single(); if(data){ LIBRARY.push(data); state.live.push({ id:data.id, freq:freq, section:section, text:name }); } render(); } return; }
+  const mv=e.target.closest("[data-cl-move]"); if(mv){ const m=mv.dataset.clMove;
+    if(m==="addall"){ state.live=state.live.concat(state.removed); state.removed=[]; }
+    else if(m==="removeall"){ state.removed=state.removed.concat(state.live); state.live=[]; }
+    else if(m==="add"){ const mo=state.removed.filter(t=>state.sel.has(t.id)); state.removed=state.removed.filter(t=>!state.sel.has(t.id)); state.live=state.live.concat(mo); }
+    else if(m==="remove"){ const mo=state.live.filter(t=>state.sel.has(t.id)); state.live=state.live.filter(t=>!state.sel.has(t.id)); state.removed=state.removed.concat(mo); }
+    state.sel.clear(); render(); return; }
 });
-document.addEventListener("change",function(e){ const home=e.target.closest("[data-cl-home]"); if(home){ state.clHome=home.value; render(); } });
-
-/* ============ identity + boot ============ */
-async function boot(){
-  try {
-    const { data:{ session } } = await sb.auth.getSession();
-    if(session){
-      const uid=session.user.id;
-      const { data:me } = await sb.from('profiles').select('full_name,email').eq('id',uid).single();
-      window.__ME = (me && (me.full_name||me.email)) || session.user.email || "";
-      document.getElementById('userName').textContent = window.__ME || "Admin";
-      const initials = (window.__ME||"?").split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase();
-      document.getElementById('badge').textContent = initials || "AD";
-    }
-  } catch(e){}
-  await loadCore();
-  render();
-}
-boot();
-</script>
+document.addEventListener("input", function(e){
+  const s=e.target.closest("[data-doc-search]"); if(s){ state.docSearch=s.value; render(); const el=view.querySelector("[data-doc-search]"); if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length); } return; }
+  const si=e.target.closest("[data-in-search]"); if(si){ state.inSearch=si.value; render(); const el=view.querySelector("[data-in-search]"); if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length); } }
+});
+document.addEventListener("change", async function(e){
+  const fm=e.target.closest("[data-cl-freqmove]"); if(fm){ const id=fm.dataset.clFreqmove; const t=state.live.concat(state.removed).find(x=>x.id===id); if(t){ t.freq=fm.value; await SB.from("cl_library").update({ frequency:FREQ_KEYS[fm.value] }).eq("id",id); } render(); return; }
+  const filt=e.target.closest("[data-cl-filter]"); if(filt){ state.clFilter=filt.value; render(); return; }
+  const sort=e.target.closest("[data-doc-sort]"); if(sort){ state.docSort=sort.value; render(); return; }
+});
+(async function boot(){ try { await loadAll(); render(); } catch(err){ view.innerHTML='<div class="loading">Could not load data: '+esc(err.message||err)+'</div>'; console.error(err); } })();
+<\/script>
 </body>
 </html>
