@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HASC RM Compliance \u2014 Today</title>
-<script src="wb-config.js"></script>
+<title>HASC RM Compliance — Today</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="wb-config.js"></script>
 <script src="wb-guard.js"></script>
 <style>
   * { box-sizing:border-box; }
@@ -46,9 +47,9 @@
     <div class="whoami"><div class="user-name" id="userName"></div></div>
   </header>
   <main class="container" id="view">
-    <div class="callout"><b>Today</b> \u2014 which homes signed off today and which are still pending.</div>
+    <div class="callout"><b>Today</b> — which homes signed off today and which are still pending.</div>
     <div class="doc-label" id="dateLabel"></div>
-    <div id="body"><div class="empty">Loading today\u2019s status\u2026</div></div>
+    <div id="body"><div class="empty">Loading today’s status…</div></div>
   </main>
 <script>
   function nycParts(){
@@ -100,7 +101,7 @@
       document.getElementById("body").innerHTML = h;
     }catch(e){
       console.warn("[HASC today]", e);
-      document.getElementById("body").innerHTML = '<div class="empty">Could not load today\u2019s data.</div>';
+      document.getElementById("body").innerHTML = '<div class="empty">Could not load today’s data.</div>';
     }
   })();
 </script>
