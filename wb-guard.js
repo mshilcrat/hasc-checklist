@@ -14,7 +14,7 @@
           if(p && p.data){
             try{
               sessionStorage.setItem("hasc_role", p.data.role || "");
-              sessionStorage.setItem("hasc_homes", JSON.stringify(p.data.residences || [])); try{ var __role=(p.data.role||""); var __page=(location.pathname.split("/").pop()||"").toLowerCase(); if(__role==='admin'){location.replace('wb-hub.html');return;}if(__role==="residence_manager" && __page!=="wb-checkoff.html"){ location.replace("wb-checkoff.html"); return; } }catch(__e){} try{ if(__role!=="admin"){ var __hide=function(){ var __ts=document.querySelectorAll("nav.tabs a"); __ts.forEach(function(a){ var h=(a.getAttribute("href")||"").toLowerCase(); if(h.indexOf("wb-today.html")===-1){ a.style.display="none"; } }); }; if(document.readyState!=="loading"){ __hide(); } else { document.addEventListener("DOMContentLoaded", __hide); } } }catch(__e2){}
+              sessionStorage.setItem("hasc_homes", JSON.stringify(p.data.residences || [])); try{ var __role=(p.data.role||""); var __page=(location.pathname.split("/").pop()||"").toLowerCase(); if(__role==='admin'){location.replace('wb-hub-mark2.html');return;}if(__role==="residence_manager" && __page!=="wb-checkoff.html"){ location.replace("wb-checkoff.html"); return; } }catch(__e){} try{ if(__role!=="admin"){ var __hide=function(){ var __ts=document.querySelectorAll("nav.tabs a"); __ts.forEach(function(a){ var h=(a.getAttribute("href")||"").toLowerCase(); if(h.indexOf("wb-today.html")===-1){ a.style.display="none"; } }); }; if(document.readyState!=="loading"){ __hide(); } else { document.addEventListener("DOMContentLoaded", __hide); } } }catch(__e2){}
             }catch(e){}
           }
         });
