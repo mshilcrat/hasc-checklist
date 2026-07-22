@@ -353,10 +353,12 @@ function subHTML(s){
     const tab=state.inTab||"inbox";
     let rows=(SUBS||[]).slice();
     if(tab==="notes") rows=rows.filter(function(s){ return s.comments && String(s.comments).trim(); });
+    if(tab==="inbox") rows=rows.filter(function(s){ return !s.is_handled; });
+    if(tab==="handled") rows=rows.filter(function(s){ return s.is_handled; });
     if(q) rows=rows.filter(function(s){ return ((s.submitted_by||"")+" "+(s.home_name||"")+" "+(s.comments||"")).toLowerCase().indexOf(q)>=0; });
     let h="<div class=\"callout\"><b>Inbox</b> \u2014 recent signed submissions from the homes, live from cl_submissions.</div>";
     h+="<div class=\"inbox-bar\"><div class=\"search\">\uD83D\uDD0D<input data-in-search placeholder=\"Search RM, residence, or note\u2026\" value=\""+esc(state.inSearch||"")+"\"></div>";
-    h+="<div class=\"seg\"><button data-in-tab=\"inbox\" class=\""+(tab==="inbox"?"active":"")+"\">All</button><button data-in-tab=\"notes\" class=\""+(tab==="notes"?"active":"")+"\">With notes</button></div></div>";
+    h+="<div class=\"seg\"><button data-in-tab=\"inbox\" class=\""+(tab==="inbox"?"active":"")+"\">All</button><button data-in-tab=\"notes\" class=\""+(tab==="notes"?"active":"")+"\">With notes</button><button data-in-tab=\"handled\" class=\""+(tab==="handled"?"active":"")+"\">Handled</button></div></div>";
     h+="<div class=\"inbox-meta\">"+rows.length+" showing</div>";
     h+="<div class=\"inbox-table\"><table><thead><tr><th>RM</th><th>RESIDENCE</th><th>CYCLE</th><th>DONE</th><th>SIGNED</th><th>NOTE</th><th style=\"text-align:right\">ACTION</th></tr></thead><tbody>";
     rows.forEach(function(s){
