@@ -91,7 +91,7 @@ body { margin:0; background:#eef2f5; color:#223038; font-family:-apple-system,Bl
 .inbox-table th { text-align:left; padding:13px 16px; font-size:11px; letter-spacing:.7px; color:#9aa7b0; font-weight:800; border-bottom:1px solid #edf1f4; background:#fbfcfd; white-space:nowrap; }
 .inbox-table td { padding:13px 16px; border-bottom:1px solid #f4f7f9; vertical-align:middle; }
 .c-staff { font-weight:700; white-space:nowrap; }
-.c-res { color:#5b6b78; }
+.c-res { color:#5b6b78; white-space:nowrap; }
 .c-date { color:#5b6b78; white-space:nowrap; }
 .c-time { display:block; color:#9aa7b0; font-size:12px; margin-top:2px; }
 .c-note { color:#4a5a65; font-size:13px; }
@@ -167,7 +167,7 @@ const areas = [
   { id:"inbox", icon:"\uD83D\uDCE5", title:"Inbox", desc:"Newly signed documents land here \u2014 mark each Handled once filed." }
 ];
 let HOMES=[], COORDS=[], LIBRARY=[], SUBS=[], PROF={};
-function nameFromEmail(e){ if(!e) return "\u2014"; e=e.toLowerCase(); if(PROF[e]&&PROF[e].full_name) return PROF[e].full_name; return e.split("@")[0]; }
+function nameFromEmail(e){ var raw=(e==null?"":String(e)).split("@")[0].trim(); var key=raw.toLowerCase(); var NAMES={"jay estes":"Jay Estes","vadim telesh":"Vadim Telesh","isaac serussi":"Isaac Serussi","shlomo":"Shlomo Shadrokh","shlomo s":"Shlomo Shadrokh","eva hoffman":"Eva Hoffman","sonya nasimova":"Sonya Nasimova","esther fischer":"Esther Fischer","bracha klein":"Bracha Klein","sarah nathan":"Sarah Nathan","yehuda osipov":"Yehuda Osipov","rivky bikel":"Rivky Bikel","david kogan":"David Kogan","michal bentes":"Michal Bentes","aj":"Aron Janani","beth hoffman":"Beth Hoffman","anar nisim":"Anar Nisim"}; if(NAMES[key]) return NAMES[key]; return raw.replace(/\b\w/g,function(c){return c.toUpperCase();}); }
 function fmtDate(iso){ if(!iso) return ""; var d=new Date(iso); return (d.getMonth()+1)+"/"+d.getDate()+"/"+d.getFullYear(); }
   function todayCount(homeName){
     const byFreq={};
@@ -277,7 +277,7 @@ function buildDocHtml(rec){
     +'<div style="flex:1;padding:22px 46px;display:grid;grid-template-columns:1fr 1fr;gap:30px;align-content:start;"><div>'+colL+'</div><div>'+colR+'</div></div>'
     +'<div style="padding:18px 46px;border-top:1px solid #e3eaec;display:flex;align-items:flex-end;justify-content:space-between;"><div><div style="font:italic 28px Georgia,serif;color:'+CY+';line-height:1;">'+e(signer)+'</div><div style="font:700 10px Arial;letter-spacing:1.5px;color:'+GRAY+';margin-top:4px;text-transform:uppercase;">Signature \u00B7 Residence Manager</div></div><div style="text-align:right;font:11px Arial;color:'+GRAY+';">Signed '+dateStr+'<br>'+timeStr+'</div></div>'
     +'</div>';
-  return html;
+  return '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>'+html+'</body></html>';
 }
 function openDoc(recId, doPrint){
   const rec=DOCS.find(function(r){ return r.id===recId; }); if(!rec) return;
@@ -335,7 +335,7 @@ function subHTML(s){
   function openSub(recId, doPrint){
     var s=(SUBS||[]).find(function(x){ return String(x.id)===String(recId); });
     if(!s) return;
-    var blob=new Blob([subHTML(s)],{type:"text/html"});
+    var blob=new Blob([buildDocHtml(s)],{type:"text/html;charset=utf-8"});
     var url=URL.createObjectURL(blob);
     var w=window.open(url,"_blank");
     if(doPrint && w){ setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} }, 500); }
