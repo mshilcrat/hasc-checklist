@@ -126,6 +126,15 @@ body { margin:0; background:#eef2f5; color:#223038; font-family:-apple-system,Bl
 @media (max-width:1080px){ .cubes { grid-template-columns:repeat(3,235px); } }
 @media (max-width:820px){ .cubes { grid-template-columns:repeat(2,235px); } .cl-grid { grid-template-columns:1fr; } .midbtns { flex-direction:row; padding-top:0; justify-content:center; flex-wrap:wrap; } }
 @media (max-width:560px){ .cubes { grid-template-columns:1fr; } }
+
+.res-block{padding:2px 0 8px;border-bottom:1px solid #eef1f4}
+.res-block .res{cursor:default}
+.catrow{display:flex;align-items:center;justify-content:space-between;padding:3px 0 3px 34px;font-size:13px}
+.cat-name{color:#5b6672;text-transform:capitalize}
+.pill{font-size:12px;font-weight:600;padding:2px 10px;border-radius:999px}
+.pill.up{background:#e6f7ee;color:#127a45}
+.pill.behind{background:#fdecec;color:#c0392b}
+.pill.none{background:#f0f2f5;color:#8a94a0}
 </style>
 </head>
 <body>
@@ -153,12 +162,18 @@ const areas = [
 ];
 let HOMES=[], COORDS=[], LIBRARY=[], SUBS=[], PROF={};
 function nameFromEmail(e){ if(!e) return "\u2014"; e=e.toLowerCase(); if(PROF[e]&&PROF[e].full_name) return PROF[e].full_name; return e.split("@")[0]; }
-function todayCount(homeName){
-  // real per-home compliance from cl_done vs cl_library size
-  const doneSet = window.__doneByHome[homeName] || new Set();
-  const total = LIBRARY.length || 1;
-  return Math.round((doneSet.size/total)*100);
-}
+function fmtDate(iso){ if(!iso) return ""; var d=new Date(iso); return (d.getMonth()+1)+"/"+d.getDate()+"/"+d.getFullYear(); }
+  function todayCount(homeName){
+    const byFreq={};
+    (SUBS||[]).forEach(function(s){
+      if(s.home_name!==homeName) return;
+      const cur=byFreq[s.frequency];
+      if(!cur || new Date(s.submitted_at)>new Date(cur.submitted_at)) byFreq[s.frequency]=s;
+    });
+    let d=0,tt=0;
+    Object.keys(byFreq).forEach(function(k){ d+=(byFreq[k].tasks_done||0); tt+=(byFreq[k].tasks_total||0); });
+    return tt? Math.round(d/tt*100):0;
+  }
 async function loadAll(){
   const [homesR, profR, libR, subR, doneR] = await Promise.all([
     SB.from("cl_homes").select("home_name,site,rm_email,ac_email"),
@@ -201,9 +216,22 @@ function renderInsights(){
   let h='<div class="callout"><b>Compliance overview</b> \u2014 ranked worst-first, from live cl_done data. Click a coordinator to expand their residences.</div>';
   COORDS.forEach((c,i)=>{ const att=c.pct<30, open=state.coord===c.name;
     h+='<div class="coord'+(att?' attention':'')+(open?' open':'')+'"><div class="coord-head" data-act="coord" data-id="'+esc(c.name)+'"><div class="rank">#'+(i+1)+'</div><div class="coord-main"><div class="coord-name">'+esc(c.name)+(att?'<span class="attn">\u26A0 NEEDS ATTENTION</span>':'')+'</div><div class="coord-sub">'+c.behind+' of '+c.total+' residences behind</div></div><div class="coord-pct" style="color:'+pctColor(c.pct)+'">'+c.pct+'%</div><span class="mini-caret">\u25B8</span></div>';
-    if(open){ c.residences.slice().sort((a,b)=>(a.pct||0)-(b.pct||0)).forEach(r=>{ h+='<div class="res"><span class="dot" style="background:'+dotColor(r.pct||0)+'"></span><span class="res-name">'+esc(r.home_name)+'</span><span class="res-staff">'+esc(r.rm_name)+'</span><span class="res-pct" style="color:'+pctColor(r.pct||0)+'">'+(r.pct||0)+'%</span></div>'; }); }
-    h+='</div>'; });
-  return h;
+    if(open){
+      c.residences.slice().sort(function(a,b){return (a.pct||0)-(b.pct||0);}).forEach(function(r){
+        h+="<div class=\"res-block\">";
+        h+="<div class=\"res\"><span class=\"dot\" style=\"background:"+dotColor(r.pct||0)+"\"></span><span class=\"res-name\">"+esc(r.home_name)+"</span><span class=\"res-staff\">"+esc(r.rm_name)+"</span><span class=\"res-pct\" style=\"color:"+pctColor(r.pct||0)+"\">"+(r.pct||0)+"%</span></div>";
+        var byFreq={};
+        (SUBS||[]).forEach(function(s){ if(s.home_name!==r.home_name) return; var cur=byFreq[s.frequency]; if(!cur || new Date(s.submitted_at)>new Date(cur.submitted_at)) byFreq[s.frequency]=s; });
+        ["daily","weekly","weekend"].forEach(function(f){
+          var s=byFreq[f]; var cls,txt;
+          if(!s){ cls="none"; txt="Not started"; }
+          else { var fp=s.tasks_total? Math.round(s.tasks_done/s.tasks_total*100):0; if(fp>=75){ cls="up"; txt="Up to date"; } else { cls="behind"; txt="Behind \u00b7 last "+fmtDate(s.submitted_at); } }
+          h+="<div class=\"catrow\"><span class=\"cat-name\">"+f+"</span><span class=\"pill "+cls+"\">"+txt+"</span></div>";
+        });
+        h+="</div>";
+      });
+    }
+    h+='</div>'; });return h;
 }
 let DOCS=[];
 async function loadDocsAll(){
