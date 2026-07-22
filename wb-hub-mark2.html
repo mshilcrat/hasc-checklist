@@ -135,6 +135,12 @@ body { margin:0; background:#eef2f5; color:#223038; font-family:-apple-system,Bl
 .pill.up{background:#e6f7ee;color:#127a45}
 .pill.behind{background:#fdecec;color:#c0392b}
 .pill.none{background:#f0f2f5;color:#8a94a0}
+
+.c-action{text-align:right;white-space:nowrap}
+.ib-btn{border:1px solid #cfe0e4;background:#fff;color:#17a2b8;border-radius:7px;padding:5px 11px;font-size:12.5px;font-weight:600;cursor:pointer;margin-left:6px}
+.ib-btn:hover{border-color:#17a2b8}
+.ib-handle{color:#5b6b78;border-color:#dbe3e8}
+.ib-handle.done{background:#e4f4ee;color:#127a45;border-color:#bfe6d2}
 </style>
 </head>
 <body>
@@ -312,17 +318,66 @@ function renderToday(){
   return h;
 }
 function inboxVisible(){ const q=state.inSearch.trim().toLowerCase(); return SUBS.filter(s=>{ if(q && ((s.submitted_by||"")+" "+(s.home_name||"")+" "+(s.comments||"")).toLowerCase().indexOf(q)===-1) return false; if(state.inTab==="notes" && !(s.comments&&s.comments.trim())) return false; return true; }); }
-function renderInbox(){
-  const list=inboxVisible();
-  let h='<div class="callout"><b>Inbox</b> \u2014 recent signed submissions from the homes, live from cl_submissions.</div>';
-  h+='<div class="inbox-bar"><div class="search"><span>\uD83D\uDD0D</span><input type="text" data-in-search placeholder="Search RM, residence, or note\u2026" value="'+esc(state.inSearch)+'"></div><div class="seg"><button data-in-tab="inbox" class="'+(state.inTab==="inbox"?"active":"")+'">All</button><button data-in-tab="notes" class="'+(state.inTab==="notes"?"active":"")+'">With notes</button></div></div>';
-  h+='<div class="inbox-meta">'+list.length+' showing</div>';
-  h+='<div class="inbox-table"><table><thead><tr><th>RM</th><th>RESIDENCE</th><th>CYCLE</th><th>DONE</th><th>SIGNED</th><th>NOTE</th></tr></thead><tbody>';
-  if(!list.length) h+='<tr><td colspan="6" class="empty">Nothing here right now.</td></tr>';
-  list.forEach(s=>{ const dt=s.submitted_at?new Date(s.submitted_at):null; const dstr=dt?dt.toLocaleDateString('en-US',{timeZone:TZ}):''; const tstr=dt?dt.toLocaleTimeString('en-US',{timeZone:TZ,hour:'numeric',minute:'2-digit'}):'';
-    h+='<tr><td class="c-staff">'+esc(nameFromEmail(s.submitted_by)||s.submitted_by)+'</td><td class="c-res">'+esc(s.home_name)+'</td><td>'+esc(s.frequency||"\u2014")+'</td><td>'+(s.tasks_total?s.tasks_done+"/"+s.tasks_total:"\u2014")+'</td><td class="c-date">'+esc(dstr)+'<span class="c-time">'+esc(tstr)+'</span></td><td class="c-note">'+esc(s.comments||"")+'</td></tr>'; });
-  return h+'</tbody></table></div>';
-}
+function subHTML(s){
+    var items=[];
+    try{ var tj=(typeof s.tasks_json==="string")?JSON.parse(s.tasks_json):s.tasks_json; if(tj && Array.isArray(tj.items)) items=tj.items; }catch(e){}
+    var rowsHtml=items.map(function(it){ return "<tr><td style=\"width:28px;text-align:center\">"+(it.done?"\u2713":"\u2013")+"</td><td>"+esc(it.name||"")+"</td></tr>"; }).join("");
+    var sig=s.signature? "<img src=\""+esc(s.signature)+"\" style=\"max-height:70px\">" : "<i>(no signature)</i>";
+    return "<!doctype html><html><head><meta charset=\"utf-8\"><title>Signed Checklist</title>"+
+      "<style>body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#223038;margin:40px}h1{font-size:20px;margin:0 0 4px}.meta{color:#5b6672;font-size:13px;margin-bottom:18px}table{width:100%;border-collapse:collapse;font-size:13px}td{padding:6px 8px;border-bottom:1px solid #eef1f4}.sig{margin-top:24px;border-top:1px solid #ddd;padding-top:12px}</style></head><body>"+
+      "<h1>Signed Checklist \u2014 "+esc(s.home_name||"")+"</h1>"+
+      "<div class=\"meta\">RM: "+esc(nameFromEmail(s.submitted_by))+" &middot; Cycle: "+esc(s.frequency||"")+" &middot; Done: "+(s.tasks_done||0)+"/"+(s.tasks_total||0)+" &middot; Signed: "+fmtDate(s.submitted_at)+"</div>"+
+      "<table><tbody>"+rowsHtml+"</tbody></table>"+
+      (s.comments? "<p><b>Notes:</b> "+esc(s.comments)+"</p>":"")+
+      "<div class=\"sig\"><b>Signature:</b><br>"+sig+"</div>"+
+      "</body></html>";
+  }
+  function openSub(recId, doPrint){
+    var s=(SUBS||[]).find(function(x){ return String(x.id)===String(recId); });
+    if(!s) return;
+    var blob=new Blob([subHTML(s)],{type:"text/html"});
+    var url=URL.createObjectURL(blob);
+    var w=window.open(url,"_blank");
+    if(doPrint && w){ setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} }, 500); }
+  }
+  async function setInHandled(recId, val){
+    try{
+      await SB.from("cl_submissions").update({ is_handled: val }).eq("id", recId);
+      var s=(SUBS||[]).find(function(x){ return String(x.id)===String(recId); });
+      if(s) s.is_handled=val;
+      render();
+    }catch(err){ alert("Could not update: "+(err.message||err)); }
+  }
+  function renderInbox(){
+    const q=(state.inSearch||"").toLowerCase();
+    const tab=state.inTab||"inbox";
+    let rows=(SUBS||[]).slice();
+    if(tab==="notes") rows=rows.filter(function(s){ return s.comments && String(s.comments).trim(); });
+    if(q) rows=rows.filter(function(s){ return ((s.submitted_by||"")+" "+(s.home_name||"")+" "+(s.comments||"")).toLowerCase().indexOf(q)>=0; });
+    let h="<div class=\"callout\"><b>Inbox</b> \u2014 recent signed submissions from the homes, live from cl_submissions.</div>";
+    h+="<div class=\"inbox-bar\"><div class=\"search\">\uD83D\uDD0D<input data-in-search placeholder=\"Search RM, residence, or note\u2026\" value=\""+esc(state.inSearch||"")+"\"></div>";
+    h+="<div class=\"seg\"><button data-in-tab=\"inbox\" class=\""+(tab==="inbox"?"active":"")+"\">All</button><button data-in-tab=\"notes\" class=\""+(tab==="notes"?"active":"")+"\">With notes</button></div></div>";
+    h+="<div class=\"inbox-meta\">"+rows.length+" showing</div>";
+    h+="<div class=\"inbox-table\"><table><thead><tr><th>RM</th><th>RESIDENCE</th><th>CYCLE</th><th>DONE</th><th>SIGNED</th><th>NOTE</th><th style=\"text-align:right\">ACTION</th></tr></thead><tbody>";
+    rows.forEach(function(s){
+      var when=new Date(s.submitted_at);
+      var dateStr=fmtDate(s.submitted_at);
+      var timeStr=when.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+      var handled=!!s.is_handled;
+      h+="<tr>";
+      h+="<td class=\"c-staff\">"+esc(nameFromEmail(s.submitted_by))+"</td>";
+      h+="<td class=\"c-res\">"+esc(s.home_name||"")+"</td>";
+      h+="<td>"+esc(s.frequency||"")+"</td>";
+      h+="<td>"+(s.tasks_done||0)+"/"+(s.tasks_total||0)+"</td>";
+      h+="<td class=\"c-date\">"+dateStr+"<span class=\"c-time\">"+timeStr+"</span></td>";
+      h+="<td class=\"c-note\">"+esc(s.comments||"")+"</td>";
+      h+="<td class=\"c-action\"><button class=\"ib-btn\" data-in-view=\""+s.id+"\">View</button><button class=\"ib-btn\" data-in-print=\""+s.id+"\">Print</button><button class=\"ib-btn ib-handle"+(handled?" done":"")+"\" data-in-handle=\""+s.id+"\">"+(handled?"\u2713 Handled":"Mark handled")+"</button></td>";
+      h+="</tr>";
+    });
+    if(!rows.length) h+="<tr><td colspan=\"7\" class=\"empty\">Nothing here.</td></tr>";
+    h+="</tbody></table></div>";
+    return h;
+  }
 
 // ---------- Checklists: two-panel builder on cl_library ----------
 function freqLabel(fk){ for(const k in FREQ_KEYS){ if(FREQ_KEYS[k]===fk) return k; } return (fk||"").charAt(0).toUpperCase()+(fk||"").slice(1); }
@@ -379,6 +434,9 @@ document.addEventListener("click", async function(e){
   const fold=e.target.closest("[data-doc-folder]"); if(fold){ const n=fold.dataset.docFolder; if(state.docOpen.has(n)) state.docOpen.delete(n); else { state.docOpen.add(n); } render(); return; }
   const dvw=e.target.closest("[data-doc-view]"); if(dvw){ openDoc(dvw.dataset.docView, false); return; }
   const dpr=e.target.closest("[data-doc-print]"); if(dpr){ openDoc(dpr.dataset.docPrint, true); return; }
+    const ibv=e.target.closest("[data-in-view]"); if(ibv){ openSub(ibv.dataset.inView, false); return; }
+    const ibp=e.target.closest("[data-in-print]"); if(ibp){ openSub(ibp.dataset.inPrint, true); return; }
+    const ibh=e.target.closest("[data-in-handle]"); if(ibh){ const id=ibh.dataset.inHandle; const cur=(SUBS||[]).find(function(x){return String(x.id)===String(id);}); setInHandled(id, !(cur&&cur.is_handled)); return; }
   const del=e.target.closest("[data-cl-del]"); if(del){ const id=del.dataset.clDel; if(confirm("Permanently delete this task from the library?")){ await SB.from("cl_library").delete().eq("id",id); state.live=state.live.filter(t=>t.id!==id); state.removed=state.removed.filter(t=>t.id!==id); state.sel.delete(id); render(); } return; }
   const task=e.target.closest("[data-cl-task]"); if(task){ const id=task.dataset.clTask; if(state.sel.has(id)) state.sel.delete(id); else state.sel.add(id); render(); return; }
   const add=e.target.closest("[data-cl-add]"); if(add){ const name=(view.querySelector("[data-cl-name]").value||"").trim(); if(name){ const freq=view.querySelector("[data-cl-freq]").value; const section=(view.querySelector("[data-cl-section]").value||"GENERAL").toUpperCase(); const maxSort=LIBRARY.reduce((m,t)=>Math.max(m,t.sort_order||0),0)+1; const { data }=await SB.from("cl_library").insert({ frequency:FREQ_KEYS[freq], section:section, task_name:name, sort_order:maxSort }).select().single(); if(data){ LIBRARY.push(data); state.live.push({ id:data.id, freq:freq, section:section, text:name }); } render(); } return; }
