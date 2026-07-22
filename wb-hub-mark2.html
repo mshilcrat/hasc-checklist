@@ -309,7 +309,7 @@ function ensureCLLoaded(){
 async function loadHomeOff(){
   state.offSet = new Set();
   if(!state.clHome) return;
-  try{ const { data } = await supabase.from('cl_home_off').select('task_id').eq('home_name', state.clHome); (data||[]).forEach(r=> state.offSet.add(String(r.task_id))); }catch(e){}
+  try{ const { data } = await SB.from('cl_home_off').select('task_id').eq('home_name', state.clHome); (data||[]).forEach(r=> state.offSet.add(String(r.task_id))); }catch(e){}
 }
 function groupTasks(tasks){ const order=[], b={}; tasks.forEach(t=>{ if(state.clFilter!=="All frequencies" && t.freq!==state.clFilter) return; const key=t.freq.toUpperCase()+" \u00B7 "+t.section; if(!b[key]){ b[key]=[]; order.push(key); } b[key].push(t); }); return { order, buckets:b }; }
 function panelHTML(title, tasks, side){
@@ -363,8 +363,8 @@ document.addEventListener("click", async function(e){
     else if(m==="remove"){ toRemove = state.live.filter(t=>state.sel.has(t.id)).map(t=>t.id); }
     (async()=>{
       try{
-        if(toRemove.length){ await supabase.from('cl_home_off').insert(toRemove.map(id=>({ home_name: state.clHome, task_id: id }))); }
-        if(toAdd.length){ await supabase.from('cl_home_off').delete().eq('home_name', state.clHome).in('task_id', toAdd); }
+        if(toRemove.length){ await SB.from('cl_home_off').insert(toRemove.map(id=>({ home_name: state.clHome, task_id: id }))); }
+        if(toAdd.length){ await SB.from('cl_home_off').delete().eq('home_name', state.clHome).in('task_id', toAdd); }
       }catch(err){ alert('Save failed: '+(err.message||err)); }
       state.sel.clear(); await loadHomeOff(); render();
     })(); return; }
