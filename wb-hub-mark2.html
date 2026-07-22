@@ -367,7 +367,7 @@ document.addEventListener("click", async function(e){
         if(toAdd.length){ await supabase.from('cl_home_off').delete().eq('home_name', state.clHome).in('task_id', toAdd); }
       }catch(err){ alert('Save failed: '+(err.message||err)); }
       state.sel.clear(); await loadHomeOff(); render();
-    })(); return; }return; }
+    })(); return; }
 });
 document.addEventListener("input", function(e){
   const s=e.target.closest("[data-doc-search]"); if(s){ state.docSearch=s.value; render(); const el=view.querySelector("[data-doc-search]"); if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length); } return; }
