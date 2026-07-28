@@ -205,7 +205,7 @@ async function loadAll(){
   ]);
   (profR.data||[]).forEach(p=>{ if(p.email) PROF[p.email.toLowerCase()]=p; });
   LIBRARY = libR.data||[];
-  SUBS = subR.data; if(window.AC_ALLOWED){ SUBS=(SUBS||[]).filter(function(s){return window.acAllows(s.home_name);}); }||[];
+  SUBS = subR.data||[]; if(window.AC_ALLOWED){ SUBS=(SUBS||[]).filter(function(s){return window.acAllows(s.home_name);}); }
   window.__doneByHome = {};
   (doneR.data||[]).forEach(d=>{ (window.__doneByHome[d.home_name]=window.__doneByHome[d.home_name]||new Set()).add(d.task_id); });
   HOMES = (homesR.data||[]).map(h=>({ home_name:h.home_name, site:h.site, rm_email:h.rm_email, ac_email:h.ac_email, rm_name:nameFromEmail(h.rm_email), ac_name:nameFromEmail(h.ac_email) })); if(window.AC_ALLOWED){ HOMES=(HOMES||[]).filter(function(h){return window.acAllows(h.home_name);}); }
