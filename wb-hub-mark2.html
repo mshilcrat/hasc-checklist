@@ -155,7 +155,7 @@ body { margin:0; background:#eef2f5; color:#223038; font-family:-apple-system,Bl
     <button class="navbtn" id="backBtn">&larr; Back</button>
     <button class="navbtn" id="homeBtn">&#127968; Home</button>
   </div>
-  <div class="whoami"><div class="badge">MS</div><div class="user-name">Michael Shilcrat</div></div>
+  <div class="whoami"><div class="badge" id="acBadge">MS</div><div class="user-name" id="acUserName">Michael Shilcrat</div></div>
 </header>
 <main class="container" id="view"><div class="loading">Loading live data…</div></main>
 <script>
@@ -185,6 +185,21 @@ function fmtDate(iso){ if(!iso) return ""; var d=new Date(iso); return (d.getMon
     return tt? Math.round(d/tt*100):0;
   }
 async function loadAll(){
+  try{
+    const { data: __s } = await SB.auth.getUser();
+    const __email = __s && __s.user ? __s.user.email : null;
+    if(__email){
+      const { data: __p } = await SB.from("profiles").select("full_name").ilike("email", __email).maybeSingle();
+      const __full = (__p && __p.full_name) ? __p.full_name : "";
+      if(__full){
+        const __first = __full.split(/\\s+/)[0] || __full;
+        const __ini = __full.split(/\\s+/).filter(Boolean).map(w=>w[0]).slice(0,2).join("").toUpperCase();
+        const __b=document.getElementById("acBadge"); if(__b) __b.textContent=__ini;
+        const __n=document.getElementById("acUserName"); if(__n) __n.textContent=__full;
+        const __w=document.getElementById("acWelcome"); if(__w) __w.textContent="Welcome back, "+__first;
+      }
+    }
+  }catch(__e){ console.warn("name load failed", __e); }
   const [homesR, profR, libR, subR, doneR] = await Promise.all([
     SB.from("cl_homes").select("home_name,site,rm_email,ac_email"),
     SB.from("profiles").select("email,full_name,role"),
@@ -221,7 +236,7 @@ function goTo(t){ history.push(snap()); state.tab=t; state.coord=null; state.res
 function snap(){ return { tab:state.tab, coord:state.coord, res:state.res, clHome:state.clHome }; }
 function restore(s){ state.tab=s.tab; state.coord=s.coord; state.res=s.res; state.clHome=s.clHome; state.sel.clear(); }
 
-function renderHome(){ let h='<h1 class="screen-title">Welcome back, Michael</h1><p class="screen-sub">Choose where you want to go.</p><div class="cubes">'; areas.forEach(a=> h+='<div class="cube" data-tile="'+a.id+'"><div class="cube-icon">'+a.icon+'</div><div class="cube-title">'+esc(a.title)+'</div><div class="cube-desc">'+esc(a.desc)+'</div></div>'); return h+'</div>'; }
+function renderHome(){ let h='<h1 class="screen-title" id="acWelcome">Welcome back, Michael</h1><p class="screen-sub">Choose where you want to go.</p><div class="cubes">'; areas.forEach(a=> h+='<div class="cube" data-tile="'+a.id+'"><div class="cube-icon">'+a.icon+'</div><div class="cube-title">'+esc(a.title)+'</div><div class="cube-desc">'+esc(a.desc)+'</div></div>'); return h+'</div>'; }
 var CL_TYPES=["Daily","Weekly","Weekend","Monthly","Quarterly","Annual"];
 var CL_KEY={Daily:"daily",Weekly:"weekly",Weekend:"weekend",Monthly:"monthly",Quarterly:"quarterly",Annual:"annual"};
 var CL_MAXAGE={Daily:1,Weekly:8,Weekend:8,Monthly:35,Quarterly:95,Annual:370};
