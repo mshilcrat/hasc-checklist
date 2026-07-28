@@ -179,7 +179,8 @@ const areas = [
   { id:"insights", icon:"\uD83D\uDCCA", title:"Insights", desc:"Compliance trends by home and coordinator." },
   { id:"documents", icon:"\uD83D\uDCC4", title:"Documents", desc:"Grab the latest signed checklist for any home." },
   { id:"checklists", icon:"\uD83D\uDCCB", title:"Checklists", desc:"Open and manage the checklists behind every residence." },
-  { id:"inbox", icon:"\uD83D\uDCE5", title:"Inbox", desc:"Newly signed documents land here \u2014 mark each Handled once filed." }
+  { id:"inbox", icon:"\uD83D\uDCE5", title:"Inbox", desc:"Newly signed documents land here \u2014 mark each Handled once filed." },
+  { id:"checkoff", icon:"\u2705", title:"RM Check-Off", desc:"Fill out and sign a residence\u2019s checklist when the RM is out." }
 ];
 let HOMES=[], COORDS=[], LIBRARY=[], SUBS=[], PROF={};
 function nameFromEmail(e){ var raw=(e==null?"":String(e)).split("@")[0].trim(); var key=raw.toLowerCase(); var NAMES={"jay estes":"Jay Estes","vadim telesh":"Vadim Telesh","isaac serussi":"Isaac Serussi","shlomo":"Shlomo Shadrokh","shlomo s":"Shlomo Shadrokh","eva hoffman":"Eva Hoffman","sonya nasimova":"Sonya Nasimova","esther fischer":"Esther Fischer","bracha klein":"Bracha Klein","sarah nathan":"Sarah Nathan","yehuda osipov":"Yehuda Osipov","rivky bikel":"Rivky Bikel","david kogan":"David Kogan","michal bentes":"Michal Bentes","aj":"Aron Janani","beth hoffman":"Beth Hoffman","anar nisim":"Anar Nisim"}; if(NAMES[key]) return NAMES[key]; return raw.replace(/\b\w/g,function(c){return c.toUpperCase();}); }
@@ -509,6 +510,12 @@ document.addEventListener("change", async function(e){
   const sort=e.target.closest("[data-doc-sort]"); if(sort){ state.docSort=sort.value; render(); return; }
 });
 (async function boot(){ try { await loadAll(); await loadDocsAll(); render(); } catch(err){ view.innerHTML='<div class="loading">Could not load data: '+esc(err.message||err)+'</div>'; console.error(err); } })();
+
+/* RM Check-Off tile: navigate to existing check-off page (Mark 1), not an in-page screen */
+document.addEventListener("click", function(e){
+  var el = e.target && e.target.closest ? e.target.closest('[data-tile="checkoff"]') : null;
+  if(el){ e.stopPropagation(); e.preventDefault(); window.location.href = "wb-checkoff.html"; }
+}, true);
 </script>
 </body>
 </html>
