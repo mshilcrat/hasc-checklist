@@ -239,9 +239,10 @@ function renderInsights(){
     var open=state.coord===r.type;
     h+='<div class="coord'+(open?' open':'')+'"><div class="coord-head" data-act="coord" data-id="'+esc(r.type)+'"><div class="rank">#'+(i+1)+'</div><div class="coord-main"><div class="coord-name">'+esc(r.type)+' Checklist</div><div class="coord-sub">'+r.behind+' of '+r.total+' residences behind</div></div><div class="coord-pct" style="color:'+pctColor(r.pct)+'">'+r.pct+'%</div><span class="mini-caret">\u25B8</span></div>';
     if(open){
-      var mid=Math.ceil(r.homes.length/2), cols=[r.homes.slice(0,mid),r.homes.slice(mid)];
+      var mid=Math.ceil(r.homes.length/2), cols=[r.homes.slice(0,mid),null,r.homes.slice(mid)];
       h+='<div class="cl-grid">';
       cols.forEach(function(col){
+        if(col===null){ h+='<div></div>'; return; }
         h+='<div>';
         col.forEach(function(it){
           var label=it.st.s==="up"?"Up to date":(it.st.s==="behind"?"Behind \u2014 last "+it.st.date:"Never submitted");
